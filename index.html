@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wobbles - The JellyJelly Mascot</title>
+    <!-- Tailwind CSS betöltése -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ÚJ BETŰTÍPUSOK: Luckiest Guy (Mém), Montserrat (Alap) -->
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* STÍLUS: Vidám, mém, tengeri kék téma, kerek formákkal */
+        :root {
+            --wobbles-blue: #007bff; /* Fő kék (Jelly színe) */
+            --dark-background: #001f3f; /* Mélytengeri kék/fekete háttér */
+            --card-bg: rgba(0, 51, 85, 0.95); /* Félátlátszó kártya háttér */
+            --highlight-shadow: rgba(0, 123, 255, 0.7);
+        }
+
+        body {
+            cursor: auto;
+            font-family: 'Montserrat', sans-serif; 
+            background-color: var(--dark-background); 
+            
+            /* Háttérkép: Buborékos, Vizes Háttér */
+            background-image: url('https://t4.ftcdn.net/jpg/07/91/02/35/360_F_791023585_jznZ4n5JWxGdJA94x1r3UHhk03ljwkS4.jpg');
+            background-size: cover; 
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center center;
+            
+            color: #ffffff; /* Egyszerű fehér szöveg */
+        }
+        
+        /* FÉLÁTTETSZŐ FEKETE FEDŐRÉTEG AZ OLVASHATÓSÁG ÉRDEKÉBEN */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); 
+            z-index: -1;
+        }
+
+        /* Címek, Mém Hatással (Luckiest Guy) */
+        .font-impact {
+            font-family: 'Luckiest Guy', cursive; /* Tisztább, vastag mém betűtípus */
+            letter-spacing: 0.1em; 
+            /* Egyszerű fehér betű fekete árnyékkal (tisztább) */
+            text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.7); 
+        }
+        
+        .text-wobbles-blue {
+            color: var(--wobbles-blue); 
+            text-shadow: none;
+        }
+        .border-wobbles-blue {
+            border-color: var(--wobbles-blue); 
+        }
+        .bg-card {
+            background-color: var(--card-bg);
+            border-radius: 1.5rem; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px var(--highlight-shadow); 
+        }
+
+        .btn-solana {
+            background-color: var(--wobbles-blue);
+            color: white;
+            font-weight: 900;
+            transition: all 0.3s ease;
+        }
+        .btn-solana:hover {
+            background-color: #0099ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--highlight-shadow);
+        }
+        
+        .header-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            margin-right: 8px;
+            border: 3px solid var(--wobbles-blue); 
+        }
+        /* JELLY JELLY LOGO (Nincs kerek keret) */
+        .jellyjelly-logo {
+            width: 24px;
+            height: 24px;
+            margin-right: 6px;
+        }
+        
+        /* JELLY JELLY GOMB STÍLUS: NINCS KERET, HAGYOMÁNYOS NAV GOMB */
+        .btn-jellyjelly {
+            @apply px-4 py-1 rounded-full text-sm font-semibold text-white bg-transparent hover:bg-gray-800 transition duration-200;
+            border: none;
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5); 
+        }
+        
+        .nav-btn {
+            /* Tisztább navigációs gombok */
+            @apply px-4 py-1 rounded-full text-sm font-semibold text-white bg-transparent border-2 border-wobbles-blue hover:bg-wobbles-blue hover:text-white transition duration-200;
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5); 
+        }
+        
+        /* BANNER JAVÍTÁS */
+        .main-banner {
+            border-radius: 2rem; 
+            border-color: var(--wobbles-blue); 
+            box-shadow: 0 0 50px var(--highlight-shadow);
+            height: auto; 
+            padding: 1rem; 
+            background-color: var(--card-bg); 
+        }
+        .main-banner img {
+            width: 100%;
+            max-height: 400px; 
+            object-fit: contain; 
+            border-radius: 1.5rem;
+        }
+
+        .chart-container {
+            border: 4px solid var(--wobbles-blue);
+            box-shadow: 0 0 30px var(--highlight-shadow);
+            border-radius: 1.5rem;
+            overflow: hidden;
+        }
+
+        /* MEME MARQUEE STYLING */
+        .meme-marquee {
+            overflow: hidden;
+            position: relative;
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+        }
+        
+        .marquee-content {
+            display: flex;
+            width: fit-content; 
+            animation: scroll-left 50s linear infinite; 
+        }
+        
+        .marquee-item {
+            width: 220px; 
+            height: 220px;
+            margin: 0 1.5rem;
+            flex-shrink: 0;
+            @apply rounded-xl border-4 border-white shadow-xl transition duration-300;
+            box-shadow: 0 0 15px var(--highlight-shadow);
+            overflow: hidden;
+        }
+
+        .marquee-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        @keyframes scroll-left {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); } 
+        }
+
+        /* HÁTTÉRBEN ÚSZÓ LOGÓK (PNG) */
+        .flying-bg-logo {
+            position: fixed;
+            /* MÉRET NÖVELÉS */
+            width: 100px;
+            height: 100px;
+            pointer-events: none;
+            opacity: 0.15; 
+            z-index: -10;
+            transition: transform 12s linear, opacity 1s; 
+        }
+        
+        /* ÚSZÓ DÍSZÍTŐ LOGÓK (Tartalom mellett) */
+        @keyframes wobble {
+            0%, 100% { transform: translateY(0) rotate(2deg); }
+            50% { transform: translateY(-5px) rotate(-2deg); }
+        }
+        .wobble-deco {
+            animation: wobble 4s ease-in-out infinite;
+        }
+
+        /* FŐ ANIMÁLT LOGÓ CSS */
+        @keyframes main-wobble {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.05) translateY(-8px); }
+        }
+        #main-wobble-logo {
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            animation: main-wobble 3s ease-in-out infinite;
+            /* MÉRET ÉS KERET JAVÍTÁS */
+            width: 320px; 
+            height: 320px;
+            border-radius: 0; /* Keret eltávolítása */
+            background: none; /* Háttér eltávolítása */
+        }
+
+        /* *WOB* FELIRAT ANIMÁCIÓ */
+        @keyframes pop-up {
+            0% { opacity: 0; transform: translateY(0) scale(0.5); }
+            50% { opacity: 1; transform: translateY(-20px) scale(1); } /* Közelebb a fejhez */
+            100% { opacity: 0; transform: translateY(-40px) scale(1.2); } /* Közelebb a fejhez */
+        }
+        .wob-popup {
+            position: absolute;
+            font-family: 'Luckiest Guy', cursive;
+            color: #fff;
+            background-color: var(--wobbles-blue);
+            padding: 4px 8px;
+            border-radius: 9999px;
+            font-size: 1.5rem;
+            white-space: nowrap;
+            animation: pop-up 1s forwards;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        /* DEXSCREENER EREDETI CSS BEÁLLÍTÁSAI */
+        #dexscreener-embed{
+            position:relative;
+            width:100%;
+            padding-bottom:125%;
+        }
+        @media(min-width:1400px){
+            #dexscreener-embed{
+                padding-bottom:65%;
+            }
+        }
+        #dexscreener-embed iframe{
+            position:absolute;
+            width:100%;
+            height:100%;
+            top:0;
+            left:0;
+            border:0;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="overlay"></div>
+
+    <!-- HÁTTÉRBEN ÚSZÓ LOGÓK (20 db) -->
+    <script>
+        const bgLogoUrl = 'https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small';
+        const numLogos = 20; 
+        
+        function createFlyingLogos() {
+            const body = document.body;
+            for (let i = 0; i < numLogos; i++) {
+                const logo = document.createElement('img');
+                logo.src = bgLogoUrl;
+                logo.className = 'flying-bg-logo';
+                logo.style.left = `${Math.random() * 100}vw`;
+                logo.style.top = `${Math.random() * 100}vh`;
+                
+                body.appendChild(logo);
+                animateLogo(logo);
+            }
+        }
+
+        function animateLogo(logo) {
+            const duration = Math.floor(Math.random() * 7) + 8; // 8-15 másodperc
+            
+            const moveLogo = () => {
+                const newX = Math.random() * 100;
+                const newY = Math.random() * 100;
+                const newScale = Math.random() * 1 + 0.5;
+                
+                logo.style.transitionDuration = `${duration}s`;
+                logo.style.transform = `translate(${newX}vw, ${newY}vh) scale(${newScale})`;
+                
+                setTimeout(moveLogo, (duration + Math.random() * 2) * 1000); 
+            };
+            
+            setTimeout(moveLogo, Math.random() * 3000); 
+        }
+
+        // *WOB* POPUP LOGIKA
+        function showWobPopup(e) {
+            // A popupot a FŐ CÍM (h1#main-title) alá helyezzük
+            const titleEl = document.getElementById('main-title');
+            if (!titleEl) return;
+            const titleRect = titleEl.getBoundingClientRect();
+            
+            // Fő cím alatti pozíció a Y tengelyen (viewporthoz képest)
+            const titleBottomY = titleRect.bottom;
+            const titleCenterX = titleRect.left + titleRect.width / 2;
+            
+            // Fő popup elem (Jobb oldali WOB)
+            const popup1 = document.createElement('div');
+            popup1.textContent = '*wob*';
+            popup1.className = 'wob-popup';
+            // Pozíció közvetlenül a szöveg alá
+            popup1.style.top = `${titleBottomY + 5}px`; 
+            popup1.style.left = `${titleCenterX + 10}px`; 
+            
+            // Második popup elem (Bal oldali WOB)
+            const popup2 = document.createElement('div');
+            popup2.textContent = '*wob*';
+            popup2.className = 'wob-popup';
+            // Pozíció közvetlenül a szöveg alá, eltérő magasság
+            popup2.style.top = `${titleBottomY - 5}px`; 
+            popup2.style.left = `${titleCenterX - 70}px`; 
+            
+            document.body.appendChild(popup1);
+            document.body.appendChild(popup2);
+
+            // Eltávolítás az animáció után
+            setTimeout(() => {
+                popup1.remove();
+                popup2.remove();
+            }, 1000);
+        }
+        
+        // --- MEME MARQUEE LOGIC ---
+        const memeUrls = [
+            "https://pbs.twimg.com/media/G43KrIGWoAApfY-?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G43G2y7WUAA26ss?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G43IL7IWIAEbRQN?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G424rgBWUAEH-X1?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42kJ1tXUAEr07F?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42cQYlXAAAI29h?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42JPG8WoAA4Myg?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G417EAJWsAELMAU?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G41lkMZXUAAy1Mw?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G41DW-oWwAEutY6?format=jpg&name=360x360",
+            "https://pbs.twimg.com/media/G40xS-lWcAAs-Vr?format=jpg&name=240x240"
+        ];
+        
+        function initMemeMarquee() {
+            const marqueeContent = document.getElementById('marquee-content');
+            if (!marqueeContent) return;
+
+            const createMemeElements = (urls) => {
+                const fragment = document.createDocumentFragment();
+                urls.forEach((url, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'marquee-item'; 
+                    
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = `Wobbles Meme ${index + 1}`;
+                    img.onerror = function() { this.src = 'https://placehold.co/220x220/003355/ffffff?text=Wobbles'; };
+
+                    item.appendChild(img);
+                    fragment.appendChild(item);
+                });
+                return fragment;
+            };
+
+            marqueeContent.appendChild(createMemeElements(memeUrls));
+            marqueeContent.appendChild(createMemeElements(memeUrls));
+        }
+
+        // --- Event Listeners and Init ---
+
+        window.onload = () => {
+            const caFull = "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump";
+            document.getElementById('ca-address-nav').textContent = caFull.substring(0, 5) + '...' + caFull.substring(caFull.length - 4);
+            
+            initMemeMarquee(); 
+            createFlyingLogos(); 
+        };
+    </script>
+
+
+    <!-- Fő Navigációs Sáv (Sticky) -->
+    <nav class="bg-black shadow-2xl sticky top-0 z-20 border-b-4 border-wobbles-blue">
+        <div class="max-w-7xl mx-auto p-3 flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+
+            <!-- 1. LEFT: Logo + Ticker -->
+            <div class="flex items-center flex-shrink-0">
+                <img 
+                    src="https://pbs.twimg.com/profile_images/1984993605518233600/-T5Nq3EI_400x400.jpg" 
+                    alt="Wobbles Logo" 
+                    class="header-logo"
+                    onerror="this.onerror=null; this.src='https://placehold.co/36x36/007bff/ffffff?text=$';"
+                >
+                <span class="text-2xl font-extrabold text-white font-impact">$WOBBLES</span> 
+            </div>
+
+            <!-- 2. CENTER: Navigációs Linkek -->
+            <div class="w-full md:w-auto overflow-x-auto whitespace-nowrap header-nav">
+                <div class="inline-flex space-x-4 mx-auto md:justify-center w-full">
+                    <button onclick="scrollToSection('about')" class="nav-btn font-impact">About</button>
+                    <button onclick="scrollToSection('tokens')" class="nav-btn font-impact">Tokenomics</button>
+                    <button onclick="scrollToSection('memes')" class="nav-btn font-impact">Memes</button>
+                    <button onclick="scrollToSection('chart')" class="nav-btn btn-solana !text-white !font-extrabold font-impact">Chart</button>
+                    
+                    <!-- JELLYJELLY GOMB (CHART UTÁN, KERET NÉLKÜL) -->
+                    <a href="https://dexscreener.com/solana/3bc2e2rxcfvf9op22lvbansvwos2t98q6ercroayqydq" target="_blank" class="btn-jellyjelly font-impact flex items-center">
+                        <img src="https://image.gatedataimg.com/big_data/1738253608c076fd3c98c6dcd7fa7d70a3fb507e5b.png" alt="JellyJelly Logo" class="jellyjelly-logo">
+                        JellyJelly
+                    </a>
+                </div>
+            </div>
+
+            <!-- 3. RIGHT: CA + X.com Logo -->
+            <div class="flex items-center space-x-4 flex-shrink-0">
+                
+                <!-- CA Display + Copy (Kompakt) -->
+                <div class="flex items-center bg-[#1c1c1c] rounded-full p-1 pl-3 border border-wobbles-blue shadow-inner">
+                    <span id="ca-address-nav" class="text-xs font-mono text-white mr-3"></span> 
+                    <button onclick="copyCA('ca-address-nav')" class="text-wobbles-blue hover:text-white transition duration-150">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-2m-3-13l3 3m0 0l-3 3m3-3H8"/></svg>
+                    </button>
+                </div>
+                
+                <!-- X.com Ikon -->
+                <a href="https://x.com/wobblebyjelly" target="_blank" class="text-white hover:text-wobbles-blue transition duration-150" aria-label="X.com Link">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.901 1.144h3.298l-7.317 8.322 9.42 13.535h-3.267l-6.262-8.988-7.79 8.988h-3.32l8.038-9.845-8.4-11.752h3.355l5.594 7.828 6.45-8.322zm-2.094 18.667h1.577l-7.143-10.428h-1.637l7.203 10.428z"/></svg>
+                </a>
+                
+            </div>
+
+        </div>
+    </nav>
+    
+    <!-- Fő konténer -->
+    <div class="mx-auto p-4 md:p-8">
+        
+        <!-- Központi Banner SZEKCIÓ -->
+        <div class="content-header">
+            
+            <!-- Banner Kártya (Javított dizájn) -->
+            <header class="relative w-full overflow-hidden mb-4 border-4 main-banner">
+                <!-- Banner kép -->
+                <img 
+                    src="https://pbs.twimg.com/media/G43gEF6XsAEgA7E?format=jpg&name=small" 
+                    alt="Wobbles JellyJelly Mascot Banner" 
+                    onerror="this.onerror=null; this.src='https://placehold.co/900x250/007bff/ffffff?text=WOBBLES+BANNER'"
+                    class="w-full h-auto object-contain" 
+                >
+            </header>
+            
+            <!-- COPY MESSAGE (CA másolás utáni visszajelzés) -->
+            <p id="copy-message" class="text-wobbles-blue text-center mt-2 mb-8 hidden font-semibold text-lg"></p>
+            
+            <!-- Fő Cím (ID hozzáadva a popup-hoz) -->
+            <h1 id="main-title" class="text-3xl md:text-5xl font-extrabold text-white text-center mb-12 uppercase tracking-wider font-impact">
+                $WOBBLES THE JELLYJELLY MASCOT
+            </h1>
+        </div>
+
+        <!-- Tartalom szekció -->
+        <main class="max-w-4xl mx-auto">
+            
+            <!-- FŐ ANIMÁLT WOBBLES LOGÓ -->
+            <div class="text-center mb-12 relative">
+                <img 
+                    id="main-wobble-logo"
+                    src="https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small" 
+                    alt="Main Animated Wobbles Logo" 
+                    class="w-80 h-80 mx-auto mb-4" 
+                    onclick="showWobPopup(event)"
+                >
+            </div>
+            
+            <!-- RÓLUNK SZEKCIÓ (Az oldal tartalmából nyerve) -->
+            <section id="about" class="mb-12 bg-card p-6 md:p-10 rounded-3xl shadow-2xl border border-wobbles-blue relative">
+                
+                <!-- DÍSZÍTŐ LOGÓ 1 -->
+                <img src="https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small" alt="Wobbles Deco" class="w-12 h-12 absolute -top-4 -left-4 wobble-deco">
+                
+                <h2 class="text-2xl md:text-3xl font-bold text-white mb-4 uppercase font-impact">
+                    Wobbles: The Mascot
+                </h2>
+                <p class="text-gray-300 leading-relaxed text-lg whitespace-pre-line mb-6">
+                    Wobbles is the mascot of the JellyJelly ecosystem. He's not just a digital character; he represents the spirit of fun, community, and the simple joy of web3 on the Solana blockchain, specifically associated with the **JellyJelly Video Chats** project.
+                    
+                    He thrives underwater, hoarding $SOL in his treasure chest. Wobbles encourages the community to embrace the "Wobble" - finding balance and stability in the sometimes chaotic crypto ocean. Join Wobbles as he explores the vast digital seas!
+                </p>
+                
+                <h3 class="text-xl md:text-2xl font-bold text-white mb-4 uppercase font-impact">
+                    Mission and Community
+                </h3>
+                <p class="text-gray-300 leading-relaxed text-lg whitespace-pre-line">
+                    The $WOBBLES token aims to build a strong, playful, and decentralized community around the mascot. It's built for fun, memes, and providing a relatable face to the complex world of crypto trading.
+                </p>
+            </section>
+
+            <!-- TOKENOMIKA SZEKCIÓ -->
+            <section id="tokens" class="mb-12">
+                <h2 class="text-3xl md:text-4xl font-extrabold text-white text-center mb-8 bg-card p-4 rounded-3xl shadow-xl border-b-4 border-wobbles-blue font-impact">
+                    <span class="text-wobbles-blue">$WOBBLES</span> Tokenomics
+                </h2>
+                
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="bg-card p-6 rounded-3xl shadow-lg border border-wobbles-blue text-center relative">
+                        <!-- DÍSZÍTŐ LOGÓ 2 -->
+                        <img src="https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small" alt="Wobbles Deco" class="w-10 h-10 absolute -top-5 right-1 wobble-deco">
+                        <p class="text-4xl font-extrabold text-white font-impact">1 Billion</p>
+                        <p class="text-wobbles-blue font-semibold mt-2">Total Supply</p>
+                    </div>
+                    <div class="bg-card p-6 rounded-3xl shadow-lg border border-wobbles-blue text-center">
+                        <p class="text-4xl font-extrabold text-white font-impact">0% / 0%</p>
+                        <p class="text-wobbles-blue font-semibold mt-2">Buy / Sell Tax</p>
+                    </div>
+                    <div class="bg-card p-6 rounded-3xl shadow-lg border border-wobbles-blue text-center">
+                        <p class="text-4xl font-extrabold text-white font-impact">Burned / Locked</p>
+                        <p class="text-wobbles-blue font-semibold mt-2">Liquidity Status</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- MEME SZEKCIÓ (FOLYAMATOSAN ÚSZÓ SÁV) -->
+            <section id="memes" class="mb-12 bg-card p-6 md:p-10 rounded-3xl shadow-2xl border border-wobbles-blue">
+                <h2 class="text-2xl md:text-3xl font-bold text-white mb-8 uppercase text-center font-impact">
+                    Wobbles <span class="text-wobbles-blue">Meme</span> Gallery
+                </h2>
+                
+                <!-- ÚSZÓ SÁV KONTÉNER -->
+                <div class="meme-marquee">
+                    <div id="marquee-content" class="marquee-content">
+                        <!-- Duplikált tartalom kerül ide JS-sel -->
+                    </div>
+                </div>
+
+            </section>
+            
+            <!-- DEXSCREENER CHART SZEKCIÓ -->
+            <section id="chart" class="mb-12">
+                <h2 class="text-3xl md:text-4xl font-extrabold text-white text-center mb-8 bg-card p-4 rounded-3xl shadow-xl border-b-4 border-wobbles-blue font-impact">
+                    Live Price Chart (<span class="text-wobbles-blue">Solana</span>)
+                </h2>
+                <div class="chart-container mx-auto">
+                    <!-- Dexscreener Embed Kód a megadott beállításokkal -->
+                    <div id="dexscreener-embed">
+                        <iframe src="https://dexscreener.com/solana/2FUgN9XQGNqDxnpoCcXQziEUAH3DSnUxt5HJ9bY9vcFw?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15" allow="clipboard-write"></iframe>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+    
+    <!-- LÁBLÉC (FOOTER) -->
+    <footer class="bg-black text-gray-400 py-6 mt-8 border-t-4 border-wobbles-blue">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
+            <!-- Ticker + Copyright -->
+            <p class="font-impact text-wobbles-blue text-lg mb-1">$WOBBLES</p>
+            <p>&copy; 2025 All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- ADATOK (TARTALOM és URL-ek) ---
+        const CA_ADDRESS = "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump";
+
+        const memeUrls = [
+            "https://pbs.twimg.com/media/G43KrIGWoAApfY-?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G43G2y7WUAA26ss?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G43IL7IWIAEbRQN?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G424rgBWUAEH-X1?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42kJ1tXUAEr07F?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42cQYlXAAAI29h?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42JPG8WoAA4Myg?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G417EAJWsAELMAU?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G41lkMZXUAAy1Mw?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G41DW-oWwAEutY6?format=jpg&name=360x360",
+            "https://pbs.twimg.com/media/G40xS-lWcAAs-Vr?format=jpg&name=240x240"
+        ];
+        
+        // --- Core Functions ---
+
+        // Másolás funkció
+        function copyCA(elementId) {
+            const caAddress = CA_ADDRESS;
+            const messageEl = document.getElementById('copy-message');
+
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = caAddress;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                messageEl.textContent = "Contract Address copied to clipboard!";
+                messageEl.classList.remove('hidden', 'text-red-500');
+                messageEl.classList.add('text-wobbles-blue'); 
+
+            } catch (err) {
+                messageEl.textContent = "Copying failed. Please copy the address manually.";
+                messageEl.classList.remove('hidden', 'text-wobbles-blue');
+                messageEl.classList.add('text-red-500'); 
+            }
+
+            setTimeout(() => {
+                messageEl.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Smooth Scrolling funkció
+        function scrollToSection(id) {
+            const section = document.getElementById(id);
+            if (section) {
+                const navHeight = document.querySelector('nav').offsetHeight;
+                const offsetPosition = section.offsetTop - navHeight;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: "smooth"
+                });
+            }
+        }
+        
+        // --- MEME MARQUEE LOGIC ---
+        
+        function initMemeMarquee() {
+            const marqueeContent = document.getElementById('marquee-content');
+            if (!marqueeContent) return;
+
+            const createMemeElements = (urls) => {
+                const fragment = document.createDocumentFragment();
+                urls.forEach((url, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'marquee-item'; 
+                    
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = `Wobbles Meme ${index + 1}`;
+                    img.onerror = function() { this.src = 'https://placehold.co/220x220/003355/ffffff?text=Wobbles'; };
+
+                    item.appendChild(img);
+                    fragment.appendChild(item);
+                });
+                return fragment;
+            };
+
+            marqueeContent.appendChild(createMemeElements(memeUrls));
+            marqueeContent.appendChild(createMemeElements(memeUrls));
+        }
+        
+        // --- HÁTTÉR LOGÓ ANIMÁCIÓ LOGIKÁJA ---
+        function createFlyingLogos() {
+            const bgLogoUrl = 'https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small';
+            const numLogos = 20; 
+            const body = document.body;
+            
+            for (let i = 0; i < numLogos; i++) {
+                const logo = document.createElement('img');
+                logo.src = bgLogoUrl;
+                logo.className = 'flying-bg-logo';
+                logo.style.left = `${Math.random() * 100}vw`;
+                logo.style.top = `${Math.random() * 100}vh`;
+                
+                body.appendChild(logo);
+                animateLogo(logo);
+            }
+        }
+
+        function animateLogo(logo) {
+            const duration = Math.floor(Math.random() * 7) + 8; // 8-15 másodperc
+            
+            const moveLogo = () => {
+                const newX = Math.random() * 100;
+                const newY = Math.random() * 100;
+                const newScale = Math.random() * 1 + 0.5;
+                
+                logo.style.transitionDuration = `${duration}s`;
+                logo.style.transform = `translate(${newX}vw, ${newY}vh) scale(${newScale})`;
+                
+                setTimeout(moveLogo, (duration + Math.random() * 2) * 1000); 
+            };
+            
+            setTimeout(moveLogo, Math.random() * 3000); 
+        }
+
+        // *WOB* POPUP LOGIKA
+        function showWobPopup(e) {
+            // A popupot a FŐ CÍM (h1#main-title) alá helyezzük
+            const titleEl = document.getElementById('main-title');
+            if (!titleEl) return;
+            const titleRect = titleEl.getBoundingClientRect();
+            
+            // Fő cím alatti pozíció a Y tengelyen (viewporthoz képest)
+            const titleBottomY = titleRect.bottom;
+            const titleCenterX = titleRect.left + titleRect.width / 2;
+            
+            // Fő popup elem (Jobb oldali WOB)
+            const popup1 = document.createElement('div');
+            popup1.textContent = '*wob*';
+            popup1.className = 'wob-popup';
+            // Pozíció közvetlenül a szöveg alá
+            popup1.style.top = `${titleBottomY + 5}px`; 
+            popup1.style.left = `${titleCenterX + 10}px`; 
+            
+            // Második popup elem (Bal oldali WOB)
+            const popup2 = document.createElement('div');
+            popup2.textContent = '*wob*';
+            popup2.className = 'wob-popup';
+            // Pozíció közvetlenül a szöveg alá, eltérő magasság
+            popup2.style.top = `${titleBottomY - 5}px`; 
+            popup2.style.left = `${titleCenterX - 70}px`; 
+            
+            document.body.appendChild(popup1);
+            document.body.appendChild(popup2);
+
+            // Eltávolítás az animáció után
+            setTimeout(() => {
+                popup1.remove();
+                popup2.remove();
+            }, 1000);
+        }
+
+        // --- Event Listeners and Init ---
+
+        window.onload = () => {
+            const caFull = "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump";
+            document.getElementById('ca-address-nav').textContent = caFull.substring(0, 5) + '...' + caFull.substring(caFull.length - 4);
+            
+            initMemeMarquee(); 
+            createFlyingLogos(); 
+        };
+    </script>
+</body>
+</html>
