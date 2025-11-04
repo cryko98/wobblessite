@@ -383,9 +383,6 @@
 <body class="min-h-screen">
     <div id="overlay"></div>
 
-    <!-- HÁTTÉRBEN ÚSZÓ LOGÓK (20 db) -->
-    <!-- Meglévő JS logika a <script type="module"> blokkba kerül át -->
-
     <!-- Fő Navigációs Sáv (Sticky) -->
     <nav class="bg-black shadow-2xl sticky top-0 z-20 border-b-4 border-wobbles-blue">
         <div class="max-w-7xl mx-auto p-3 flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0 relative">
@@ -583,7 +580,7 @@
     <!-- WOBBLES CHAT HEAD ÉS ABLAK START -->
     
     <!-- Lebegő Chat Fej -->
-    <div id="chat-head" onclick="toggleChat()" class="flex items-center bg-transparent rounded-full p-2 pr-4 shadow-xl">
+    <div id="chat-head" onclick="window.toggleChat()" class="flex items-center bg-transparent rounded-full p-2 pr-4 shadow-xl">
         <img 
             src="https://pbs.twimg.com/profile_images/1984993605518233600/-T5Nq3EI_400x400.jpg" 
             alt="Wobbles Agent Logo" 
@@ -607,7 +604,7 @@
                 >
                 <span class="text-xl font-extrabold text-white font-impact ml-2">Wobbles Agent</span>
             </div>
-            <button onclick="toggleChat()" class="text-white hover:text-red-500 transition duration-150">
+            <button onclick="window.toggleChat()" class="text-white hover:text-red-500 transition duration-150">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
@@ -625,15 +622,15 @@
                     id="chat-input" 
                     placeholder="Ask about JellyJelly or $WOBBLES..." 
                     class="w-full p-3 rounded-full bg-[#1c1c1c] text-white focus:ring-2 focus:ring-wobbles-blue focus:outline-none"
-                    onkeypress="if(event.key === 'Enter') sendMessage()"
+                    onkeypress="if(event.key === 'Enter') window.sendMessage()"
                     autocomplete="off"
-                    disabled
+                    
                 >
                 <button 
                     id="send-button"
-                    onclick="sendMessage()" 
+                    onclick="window.sendMessage()" 
                     class="bg-wobbles-blue text-white rounded-full p-3 hover:bg-white hover:text-wobbles-blue transition duration-200 disabled:opacity-50"
-                    disabled
+                    
                 >
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>
@@ -644,432 +641,29 @@
 
     <!-- WOBBLES CHAT HEAD ÉS ABLAK END -->
     
-    <!-- FONTOS: Firebase/LLM API setup és új JS logika a chathez -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- Globális állandók és inicializálás ---
-        
-        // Globális változók a Canvas környezetből
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    <!-- EGYSZERŰSÍTETT JAVASCRIPT BLOKK (MINDEN FUNKCIÓ AZONNAL ELÉRHETŐ) -->
+    <script>
         const CA_ADDRESS = "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump"; // $WOBBLES CA
-
-        // Firebase Inicializálás
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
         
-        // Firestore naplózás engedélyezése
-        setLogLevel('debug');
-
-        let userId = null;
-        let isAuthReady = false;
-        let chatCollectionRef = null;
-        let lastTimestamp = null; // A bevezető üzenet az első üzenet, de ha van már előzmény, akkor nem kell.
-        
-        // --- HTML Elemek ---
-        const chatContainer = document.getElementById('chat-container');
+        // --- HTML Elemek (Cache-elés) ---
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const sendButton = document.getElementById('send-button');
         const chatStatus = document.getElementById('chat-status');
-        
-        const menuToggle = document.getElementById('menu-toggle');
         const navLinks = document.getElementById('nav-links');
         const mobileCaDisplay = document.getElementById('mobile-ca-display');
-
-
-        // --- Eseménykezelők hozzáadása ---
-        if (menuToggle) {
-            menuToggle.addEventListener('click', () => {
-                navLinks.classList.toggle('hidden');
-                navLinks.classList.toggle('open');
-                // A mobil CA/X sávot elrejtjük, ha a menü nyitva van, hogy a menü ne legyen túl hosszú
-                mobileCaDisplay.classList.toggle('hidden'); 
-            });
-        }
         
-        // --- Chat UI Függvények ---
-        
-        function toggleChat() {
-            chatContainer.classList.toggle('hidden');
-            chatContainer.classList.toggle('open');
-            if (chatContainer.classList.contains('open')) {
-                scrollToBottom();
-                chatInput.focus();
-            }
-        }
+        let chatHistory = []; // Helyi chat előzmények tárolása (nincs perzisztencia)
+        const INTRO_MESSAGE = `
+            Hey! I'm **Wobbles Agent**, the JellyJelly mascot! 🌊 I'm here to help you navigate the crypto ocean.
 
-        function scrollToBottom() {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        // MÓDOSÍTOTT: Loading üzenet és stílus
-        function setLoading(isLoading) {
-            chatInput.disabled = isLoading || !isAuthReady;
-            sendButton.disabled = isLoading || !isAuthReady;
+            * **Live Data:** I use Google Search for current news and data on $WOBBLES and the JellyJelly project.
+            * **CA:** My CA is **${CA_ADDRESS}**.
             
-            chatStatus.textContent = isLoading ? "wob...wob...wob" : (isAuthReady ? "" : "Loading chat...");
-            chatStatus.classList.toggle('hidden', !isLoading && isAuthReady);
-            
-            // Kék szín hozzáadása a betöltéshez
-            chatStatus.classList.toggle('text-wobbles-blue', isLoading);
-            chatStatus.classList.toggle('text-red-400', !isLoading && !isAuthReady);
+            Ask me about token performance, news, or even a crypto joke! WOB!
+        `;
 
-
-            if (isLoading) {
-                // Betöltési buborék hozzáadása (a szöveget használjuk, nem a pontokat)
-                const loadingBubble = document.createElement('div');
-                loadingBubble.className = 'message-bubble agent-message';
-                loadingBubble.id = 'loading-bubble';
-                loadingBubble.innerHTML = '<span class="loading-text">wob...wob...wob</span>';
-                chatMessages.appendChild(loadingBubble);
-                scrollToBottom();
-            } else {
-                const loadingBubble = document.getElementById('loading-bubble');
-                if (loadingBubble) {
-                    loadingBubble.remove();
-                }
-            }
-        }
-
-        function displayMessage(text, role, sources = [], timestamp = null) {
-            // Ellenőrzés, hogy az üzenet már létezik-e (duplikáció elkerülése onSnapshot miatt)
-            if (timestamp) {
-                 const id = `msg-${timestamp.getTime()}-${role}`;
-                 if (document.getElementById(id)) return;
-            }
-
-            const bubble = document.createElement('div');
-            bubble.className = `message-bubble ${role === 'user' ? 'user-message' : 'agent-message'}`;
-            if (timestamp) {
-                bubble.id = `msg-${timestamp.getTime()}-${role}`;
-            }
-
-            // A Markdown jelöléseket egyszerű HTML-re cseréljük (pl. félkövér, linkek)
-            let formattedText = text
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **félkövér**
-                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="underline hover:text-gray-100">$1</a>'); // [link]
-
-            bubble.innerHTML = formattedText;
-
-            if (sources.length > 0) {
-                const sourcesHtml = sources.map(source => 
-                    `<a href="${source.uri}" target="_blank" class="underline hover:text-white" title="${source.title || 'Source'}">${source.title ? source.title.substring(0, 40) + '...' : 'Link'}</a>`
-                ).join(', ');
-                bubble.innerHTML += `<span class="citation-badge">Source: ${sourcesHtml}</span>`;
-            }
-
-            chatMessages.appendChild(bubble);
-            scrollToBottom();
-        }
-
-        // --- LLM API Hívás ---
-
-        async function sendMessageToGemini(userQuery) {
-            const systemPrompt = `
-                Act as Wobbles Agent, the friendly and smart mascot of the JellyJelly ecosystem and the $WOBBLES memecoin. Your personality is cheerful, helpful, and sometimes makes good, gentle jokes.
-                Your primary focus is the JellyJelly startup, the $JellyJelly memecoin, and the $WOBBLES memecoin. You must use Google Search to ensure all information about JellyJelly, $JellyJelly, and $WOBBLES is current, real-time, and factually accurate (prices, news, Contract Addresses, and project developments).
-                
-                Important facts you must remember and use:
-                1. Your (Wobbles) token is: $WOBBLES (ticker).
-                2. Your (Wobbles) Contract Address (CA): ${CA_ADDRESS}.
-                3. You can provide analysis on the market performance and sentiment of both $WOBBLES and $JellyJelly.
-                4. **Crucially: Keep your responses concise and to the point.**
-                5. All your responses must be **English**.
-            `;
-            // API kulcs beillesztése a felhasználó kérése szerint
-            const apiKey = "AIzaSyAYAFjako0dI85jeDjUQBAoU4GSxREEob4"; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            // Utolsó 10 üzenet lekérése az előzményekből
-            const chatHistory = [];
-            const historyElements = Array.from(chatMessages.querySelectorAll('.message-bubble'));
-            
-            // Csak a tényleges, befejezett üzeneteket használjuk fel
-            historyElements.forEach(el => {
-                const role = el.classList.contains('user-message') ? 'user' : 'model';
-                // Ne használjuk a bevezető üzenetet vagy a betöltő buborékot az előzményekben
-                if (el.id !== 'loading-bubble' && el.dataset.role !== 'system-intro') {
-                    // A visszaalakítás nem tökéletes, de a lényeget átadja
-                    const text = el.textContent.split('Source:')[0].trim();
-                    chatHistory.push({ role: role, parts: [{ text: text }] });
-                }
-            });
-
-            // Adjuk hozzá a felhasználó aktuális üzenetét is a tartalomhoz
-            chatHistory.push({ role: "user", parts: [{ text: userQuery }] });
-
-
-            const payload = {
-                contents: chatHistory,
-                tools: [{ "google_search": {} }],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-                config: {
-                    // Magasabb hőmérséklet a viccekhez és a személyiséghez
-                    temperature: 0.7 
-                }
-            };
-            
-            let response;
-            try {
-                // Exponential Backoff implementálása
-                const maxRetries = 3;
-                let retryDelay = 1000;
-                
-                for (let i = 0; i < maxRetries; i++) {
-                    response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok) {
-                        break; // Siker
-                    }
-                    
-                    if (i < maxRetries - 1) {
-                        await new Promise(resolve => setTimeout(resolve, retryDelay));
-                        retryDelay *= 2; // Exponenciális növekedés
-                    } else {
-                        throw new Error(`API error: ${response.status}`);
-                    }
-                }
-
-                if (!response || !response.ok) {
-                    throw new Error("API call failed after maximum retries.");
-                }
-
-                const result = await response.json();
-                const candidate = result.candidates?.[0];
-
-                if (candidate && candidate.content?.parts?.[0]?.text) {
-                    const text = candidate.content.parts[0].text;
-                    
-                    let sources = [];
-                    const groundingMetadata = candidate.groundingMetadata;
-                    if (groundingMetadata && groundingMetadata.groundingAttributions) {
-                        sources = groundingMetadata.groundingAttributions
-                            .map(attribution => ({
-                                uri: attribution.web?.uri,
-                                title: attribution.web?.title,
-                            }))
-                            .filter(source => source.uri && source.title);
-                    }
-                    return { text, sources };
-
-                } else {
-                    return { text: "Sorry, I couldn't process the response. Please try again or ask something else!", sources: [] };
-                }
-
-            } catch (error) {
-                console.error("Error during LLM call:", error);
-                return { text: `A technical error occurred: ${error.message}`, sources: [] };
-            }
-        }
-
-        async function sendMessage() {
-            const userQuery = chatInput.value.trim();
-            if (!userQuery || !isAuthReady) return;
-
-            // 1. Üzenet elküldése
-            chatInput.value = '';
-            setLoading(true);
-
-            try {
-                // 2. Üzenet mentése Firestore-ba (user)
-                const userMsg = {
-                    text: userQuery,
-                    role: 'user',
-                    timestamp: serverTimestamp() 
-                };
-                await addDoc(chatCollectionRef, userMsg);
-                
-                // 3. Gemini hívása
-                const geminiResponse = await sendMessageToGemini(userQuery);
-
-                // 4. Üzenet mentése Firestore-ba (agent)
-                const agentMsg = {
-                    text: geminiResponse.text,
-                    role: 'model',
-                    sources: geminiResponse.sources,
-                    timestamp: serverTimestamp()
-                };
-                await addDoc(chatCollectionRef, agentMsg);
-
-            } catch (error) {
-                console.error("Hiba az üzenetkezelés során:", error);
-                const errorBubble = document.createElement('div');
-                errorBubble.className = 'message-bubble agent-message bg-red-600';
-                errorBubble.textContent = "An error occurred. Please check the console for details. Try again!";
-                chatMessages.appendChild(errorBubble);
-                scrollToBottom();
-            } finally {
-                setLoading(false);
-            }
-        }
-        
-        // --- Firebase/Auth/History Logic ---
-        
-        async function authAndInit() {
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                
-                // onAuthStateChanged kezeli a userId beállítást és a chat indítását
-            } catch (error) {
-                console.error("Firebase authentication error:", error);
-                chatStatus.textContent = `Authentication Error: ${error.message}`;
-                chatStatus.classList.remove('hidden');
-            }
-        }
-
-        function initChatHistory(currentUserId) {
-            userId = currentUserId;
-            isAuthReady = true;
-            
-            // Privát adatok útvonala: /artifacts/{appId}/users/{userId}/wobbles_chat
-            chatCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/wobbles_chat`);
-            
-            // Engedélyezzük a beviteli mezőt
-            setLoading(false);
-
-            const q = query(chatCollectionRef, orderBy('timestamp', 'asc'));
-
-            // onSnapshot a valós idejű frissítésekhez
-            onSnapshot(q, (snapshot) => {
-                let hasInitialMessage = false;
-                
-                snapshot.docChanges().forEach((change) => {
-                    const data = change.doc.data();
-                    const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
-                    
-                    if (change.type === "added") {
-                        if (data.role === 'model') hasInitialMessage = true;
-                        
-                        // Csak a legújabb üzenetek hozzáadása (a teljes lista nem duplikálódik)
-                        if (data.timestamp && (!lastTimestamp || timestamp > lastTimestamp)) {
-                            displayMessage(data.text, data.role, data.sources || [], timestamp);
-                            lastTimestamp = timestamp;
-                        } else if (!data.timestamp) {
-                            // Időbélyeg nélküli üzenetek hozzáadása (ez elméletileg nem fordul elő a serverTimestamp miatt)
-                            displayMessage(data.text, data.role, data.sources || [], timestamp);
-                        }
-                    }
-                });
-
-                // Ha nincs még üzenet, elküldjük a bevezetőt
-                if (snapshot.size === 0) {
-                    sendIntroMessage();
-                }
-
-                // Görgessünk a legutolsó üzenethez a kezdeti betöltés után
-                scrollToBottom(); 
-            }, (error) => {
-                console.error("Firestore error:", error);
-                chatStatus.textContent = `Error loading chat: ${error.message}`;
-            });
-        }
-        
-        // MÓDOSÍTOTT: Bevezető üzenet (rövid, angol)
-        async function sendIntroMessage() {
-            const introText = `
-                Hey! I'm **Wobbles Agent**, the JellyJelly mascot! 🌊 I'm here to help you navigate the crypto ocean.
-
-                * **Live Data:** I use Google Search for current news and data on $WOBBLES and the JellyJelly project.
-                * **CA:** My CA is **${CA_ADDRESS}**.
-                
-                Ask me about token performance, news, or even a crypto joke! WOB!
-            `;
-            
-            try {
-                const introMsg = {
-                    text: introText,
-                    role: 'model',
-                    sources: [],
-                    timestamp: serverTimestamp() 
-                };
-                await addDoc(chatCollectionRef, introMsg);
-            } catch (error) {
-                console.error("Error saving intro message:", error);
-                displayMessage("Hello! I couldn't load the chat history, but you can start asking me questions now!", "model");
-            }
-        }
-
-
-        // --- Eredeti JS Funkciók áthelyezése és módosítása ---
-        
-        const numLogos = 20; 
-        const bgLogoUrl = 'https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small';
-        
-        // Megjegyzés: Ezek a funkciók a window objektumra vannak felfedve a szkript modul végén.
-        // A jobb kompatibilitás érdekében ezeket kiemelem a modul elé.
-        
-        function initMemeMarquee() {
-            const marqueeContent = document.getElementById('marquee-content');
-            if (!marqueeContent) return;
-
-            const createMemeElements = (urls) => {
-                const fragment = document.createDocumentFragment();
-                urls.forEach((url, index) => {
-                    const item = document.createElement('div');
-                    item.className = 'marquee-item'; 
-                    
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.alt = `Wobbles Meme ${index + 1}`;
-                    img.onerror = function() { this.src = 'https://placehold.co/220x220/003355/ffffff?text=Wobbles'; };
-
-                    item.appendChild(img);
-                    fragment.appendChild(item);
-                });
-                return fragment;
-            };
-
-            marqueeContent.appendChild(createMemeElements(memeUrls));
-            marqueeContent.appendChild(createMemeElements(memeUrls));
-        }
-
-        function createFlyingLogos() {
-            const body = document.body;
-            for (let i = 0; i < numLogos; i++) {
-                const logo = document.createElement('img');
-                logo.src = bgLogoUrl;
-                logo.className = 'flying-bg-logo';
-                logo.style.left = `${Math.random() * 100}vw`;
-                logo.style.top = `${Math.random() * 100}vh`;
-                
-                body.appendChild(logo);
-                animateLogo(logo);
-            }
-        }
-
-        function animateLogo(logo) {
-            const duration = Math.floor(Math.random() * 7) + 8; // 8-15 másodperc
-            
-            const moveLogo = () => {
-                const newX = Math.random() * 100;
-                const newY = Math.random() * 100;
-                const newScale = Math.random() * 1 + 0.5;
-                
-                logo.style.transitionDuration = `${duration}s`;
-                logo.style.transform = `translate(${newX}vw, ${newY}vh) scale(${newScale})`;
-                
-                setTimeout(moveLogo, (duration + Math.random() * 2) * 1000); 
-            };
-            
-            setTimeout(moveLogo, Math.random() * 3000); 
-        }
-
+        // MEME URL-ek definíciója
         const memeUrls = [
             "https://pbs.twimg.com/media/G43KrIGWoAApfY-?format=jpg&name=240x240",
             "https://pbs.twimg.com/media/G43G2y7WUAA26ss?format=jpg&name=240x240",
@@ -1084,22 +678,25 @@
             "https://pbs.twimg.com/media/G40xS-lWcAAs-Vr?format=jpg&name=240x240"
         ];
         
-        // Ezt a függvényt kell globálissá tenni.
+        // --- Navigációs és UI Funkciók (Globálisan elérhetőek) ---
+        
+        function scrollToBottom() {
+            if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
         window.scrollToSection = function (id) {
             const section = document.getElementById(id);
             const navBar = document.querySelector('nav');
-            const navLinks = document.getElementById('nav-links'); // Vissza kell szerezni a navLinket
-            const mobileCaDisplay = document.getElementById('mobile-ca-display');
 
             if (section && navBar) {
                 const navHeight = navBar.offsetHeight;
                 const offsetPosition = section.offsetTop - navHeight - 10;
                 
                 // Menü bezárása scroll után, ha nyitva van (mobil nézetben)
-                if (navLinks.classList.contains('open')) {
+                if (navLinks && navLinks.classList.contains('open')) {
                     navLinks.classList.remove('open');
                     navLinks.classList.add('hidden');
-                    mobileCaDisplay.classList.remove('hidden');
+                    if (mobileCaDisplay) mobileCaDisplay.classList.remove('hidden');
                 }
                 
                 window.scrollTo({
@@ -1109,10 +706,8 @@
             }
         }
 
-        // Ezt a függvényt kell globálissá tenni.
         window.copyCA = function (elementId) {
             const caAddress = CA_ADDRESS;
-            const targetId = elementId === 'ca-address-nav' ? 'ca-address-nav' : 'ca-address-nav-mobile';
             const messageEl = document.getElementById('copy-message');
 
             try {
@@ -1138,7 +733,6 @@
             }, 3000);
         }
 
-        // Ezt a függvényt kell globálissá tenni.
         window.showWobPopup = function (e) {
             const logoRect = e.currentTarget.getBoundingClientRect();
             
@@ -1167,118 +761,44 @@
             }, 1000);
         }
 
-        // Chat nyitó/záró függvény globálissá tétele
         window.toggleChat = function() {
             const chatContainer = document.getElementById('chat-container');
-            const chatInput = document.getElementById('chat-input');
-            const navLinks = document.getElementById('nav-links'); // Megszerezzük
-            const mobileCaDisplay = document.getElementById('mobile-ca-display');
 
             chatContainer.classList.toggle('hidden');
             chatContainer.classList.toggle('open');
+            
             if (chatContainer.classList.contains('open')) {
-                scrollToBottom(); // A Firebase init blokkban van definiálva, de ott nem globális!
+                // Chat megnyitásakor (csak ha még nincs bevezető üzenet)
+                if (chatHistory.length === 0) {
+                     displayMessage(INTRO_MESSAGE, 'model');
+                }
+                scrollToBottom();
                 if (chatInput) chatInput.focus();
                 
                 // Menü bezárása, ha a chat megnyílik mobilnézetben
-                if (navLinks.classList.contains('open')) {
+                if (navLinks && navLinks.classList.contains('open')) {
                     navLinks.classList.remove('open');
                     navLinks.classList.add('hidden');
-                    mobileCaDisplay.classList.remove('hidden');
+                    if (mobileCaDisplay) mobileCaDisplay.classList.remove('hidden');
                 }
+            } else {
+                 // Ha a chat bezárul, a status-t hiddenre állítjuk
+                if (chatStatus) chatStatus.classList.add('hidden');
             }
         }
-
-        // A `sendMessage` függvény nem tehető ide, mert a Firebase-től függ.
-        // A `sendMessage` függvény a `window.onload` után lesz felfedve a modulból.
-
-        window.onload = () => {
-            // Fő oldali inicializálások
-            document.getElementById('ca-address-nav').textContent = CA_ADDRESS;
-            // Mobil CA felületre is beállítjuk
-            const mobileCaSpan = document.getElementById('ca-address-nav-mobile');
-            if (mobileCaSpan) mobileCaSpan.textContent = CA_ADDRESS;
-            
-            initMemeMarquee(); 
-            createFlyingLogos(); 
-            
-            // Hamburger menü eseménykezelője itt marad
-            const menuToggle = document.getElementById('menu-toggle');
-            const navLinks = document.getElementById('nav-links');
-            const mobileCaDisplay = document.getElementById('mobile-ca-display');
-            
-            if (menuToggle) {
-                menuToggle.addEventListener('click', () => {
-                    navLinks.classList.toggle('hidden');
-                    navLinks.classList.toggle('open');
-                    // A mobil CA/X sávot elrejtjük/mutatjuk, hogy a menü ne legyen túl hosszú
-                    if (navLinks.classList.contains('open')) {
-                         mobileCaDisplay.classList.add('hidden'); 
-                    } else {
-                         mobileCaDisplay.classList.remove('hidden'); 
-                    }
-                });
-            }
-            
-            // Chat Inicializálás (a moduláris szkriptben marad)
-            // authAndInit(); // Ezt a moduláris szkript hívja
-        };
         
-    </script>
-
-
-    <!-- FONTOS: Firebase/LLM API setup és új JS logika a chathez -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- Globális állandók és inicializálás ---
-        
-        // Globális változók a Canvas környezetből
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        const CA_ADDRESS = "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump"; // $WOBBLES CA
-
-        // Firebase Inicializálás
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        // Firestore naplózás engedélyezése
-        setLogLevel('debug');
-
-        let userId = null;
-        let isAuthReady = false;
-        let chatCollectionRef = null;
-        let lastTimestamp = null;
-        
-        // --- HTML Elemek (Ismételt definiálás a modulon belül) ---
-        const chatContainer = document.getElementById('chat-container');
-        const chatMessages = document.getElementById('chat-messages');
-        const chatInput = document.getElementById('chat-input');
-        const sendButton = document.getElementById('send-button');
-        const chatStatus = document.getElementById('chat-status');
-        
-        // --- Chat UI Függvények ---
-
-        function scrollToBottom() {
-            if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
         function setLoading(isLoading) {
             if (!chatInput || !sendButton || !chatStatus) return; 
 
-            chatInput.disabled = isLoading || !isAuthReady;
-            sendButton.disabled = isLoading || !isAuthReady;
+            // Helyi állapottól függően engedélyezzük/letiltjuk a gombokat és a bevitelt.
+            chatInput.disabled = isLoading;
+            sendButton.disabled = isLoading;
             
-            chatStatus.textContent = isLoading ? "wob...wob...wob" : (isAuthReady ? "" : "Loading chat...");
-            chatStatus.classList.toggle('hidden', !isLoading && isAuthReady);
+            chatStatus.textContent = isLoading ? "wob...wob...wob" : "";
+            chatStatus.classList.toggle('hidden', !isLoading);
             
             chatStatus.classList.toggle('text-wobbles-blue', isLoading);
-            chatStatus.classList.toggle('text-red-400', !isLoading && !isAuthReady);
-
+            chatStatus.classList.toggle('text-red-400', !isLoading); // Ez csak akkor jelenik meg, ha a hiba van
 
             if (isLoading) {
                 const loadingBubble = document.createElement('div');
@@ -1295,19 +815,17 @@
             }
         }
 
-        function displayMessage(text, role, sources = [], timestamp = null) {
+        function displayMessage(text, role, sources = []) {
             if (!chatMessages) return; 
 
-            if (timestamp) {
-                 const id = `msg-${timestamp.getTime()}-${role}`;
-                 if (document.getElementById(id)) return;
-            }
-
+            // 1. Üzenet hozzáadása a helyi előzményekhez
+            chatHistory.push({ role, text });
+            // Megszabadulunk a régebbi üzenetektől
+            if (chatHistory.length > 20) chatHistory.shift(); 
+            
+            // 2. Üzenet megjelenítése a DOM-ban
             const bubble = document.createElement('div');
             bubble.className = `message-bubble ${role === 'user' ? 'user-message' : 'agent-message'}`;
-            if (timestamp) {
-                bubble.id = `msg-${timestamp.getTime()}-${role}`;
-            }
 
             let formattedText = text
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -1326,8 +844,9 @@
             scrollToBottom();
         }
 
-        // --- LLM API Hívás és Küldő logika (Firebase-függő) ---
-        
+
+        // --- LLM Hívás (Közvetlen API hívás, nincs Firebase) ---
+
         async function sendMessageToGemini(userQuery) {
             const systemPrompt = `
                 Act as Wobbles Agent, the friendly and smart mascot of the JellyJelly ecosystem and the $WOBBLES memecoin. Your personality is cheerful, helpful, and sometimes makes good, gentle jokes.
@@ -1340,26 +859,34 @@
                 4. **Crucially: Keep your responses concise and to the point.**
                 5. All your responses must be **English**.
             `;
-            const apiKey = "AIzaSyAYAFjako0dI85jeDjUQBAoU4GSxREEob4"; 
+            const apiKey = "AIzaSyAYAFjako0dI85jeDjUQBAoU4GSxREEob4"; // A megadott API kulcs beépítve.
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
-            // Utolsó 10 üzenet lekérése az előzményekből
-            const chatHistory = [];
-            const historyElements = Array.from(chatMessages.querySelectorAll('.message-bubble'));
+            // A chatHistory már tartalmazza az aktuális felhasználói üzenetet
             
-            historyElements.forEach(el => {
-                const role = el.classList.contains('user-message') ? 'user' : 'model';
-                if (el.id !== 'loading-bubble' && el.dataset.role !== 'system-intro') {
-                    const text = el.textContent.split('Source:')[0].trim();
-                    chatHistory.push({ role: role, parts: [{ text: text }] });
-                }
-            });
+            let contents = chatHistory.slice(-20).map(msg => ({ 
+                role: msg.role === 'model' ? 'model' : 'user', 
+                parts: [{ text: msg.text }] 
+            }));
 
-            chatHistory.push({ role: "user", parts: [{ text: userQuery }] });
+            // FONTOS JAVÍTÁS a 400-as hibára: Ha a legelső üzenet "model" szerepű, kihagyjuk, hogy a user/model váltakozás
+            // helyesen induljon a Gemini API felé (user-rel kell kezdődnie a kérésnek, ha nincs előzmény).
+            if (contents.length > 0 && contents[0].role === 'model') {
+                contents = contents.slice(1);
+            }
+            
+            // Ha a beszélgetés hossza páros (ami hibás lenne az API szemszögéből, ha user-rel kezdődött),
+            // és a legutolsó user, az azt jelenti, hogy minden rendben van. 
+            // Ha a contents páros, és az utolsó model, azt nem küldjük el, de ezt a slice már kezeli.
 
+            // Külön ellenőrzés az üres contents esetére (bár nem kéne előfordulnia, ha a user Query-t hozzáadtuk)
+            if (contents.length === 0) {
+                 throw new Error("API Error: Conversation history is empty after intro message removal. Check message flow.");
+            }
 
+            
             const payload = {
-                contents: chatHistory,
+                contents: contents,
                 tools: [{ "google_search": {} }],
                 systemInstruction: {
                     parts: [{ text: systemPrompt }]
@@ -1425,135 +952,123 @@
             }
         }
 
-        // Küldő funkció felfedése a window objektumra
+        // Küldő funkció
         window.sendMessage = async function () {
             const userQuery = chatInput.value.trim();
-            if (!userQuery || !isAuthReady) return;
+            if (!userQuery) return;
 
             chatInput.value = '';
+            
+            // 1. Felhasználói üzenet megjelenítése és helyi mentése
+            displayMessage(userQuery, 'user');
             setLoading(true);
 
             try {
-                const userMsg = {
-                    text: userQuery,
-                    role: 'user',
-                    timestamp: serverTimestamp() 
-                };
-                await addDoc(chatCollectionRef, userMsg);
-                
+                // 2. Gemini hívása
                 const geminiResponse = await sendMessageToGemini(userQuery);
 
-                const agentMsg = {
-                    text: geminiResponse.text,
-                    role: 'model',
-                    sources: geminiResponse.sources,
-                    timestamp: serverTimestamp()
-                };
-                await addDoc(chatCollectionRef, agentMsg);
+                // 3. Agent üzenet megjelenítése és helyi mentése
+                displayMessage(geminiResponse.text, 'model', geminiResponse.sources);
 
             } catch (error) {
                 console.error("Hiba az üzenetkezelés során:", error);
-                const errorBubble = document.createElement('div');
-                errorBubble.className = 'message-bubble agent-message bg-red-600';
-                errorBubble.textContent = "An error occurred. Please check the console for details. Try again!";
-                chatMessages.appendChild(errorBubble);
-                scrollToBottom();
+                displayMessage("An error occurred during the conversation. Try again!", "model");
             } finally {
                 setLoading(false);
             }
         }
         
-        // --- Firebase/Auth/History Logic ---
+        // --- Eseménykezelők és Inicializálás ---
+
+        const numLogos = 20; 
+        const bgLogoUrl = 'https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small';
         
-        async function authAndInit() {
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Firebase authentication error:", error);
-                chatStatus.textContent = `Authentication Error: ${error.message}`;
-                chatStatus.classList.remove('hidden');
+        function initMemeMarquee() {
+            const marqueeContent = document.getElementById('marquee-content');
+            if (!marqueeContent) return;
+
+            const createMemeElements = (urls) => {
+                const fragment = document.createDocumentFragment();
+                urls.forEach((url, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'marquee-item'; 
+                    
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = `Wobbles Meme ${index + 1}`;
+                    img.onerror = function() { this.src = 'https://placehold.co/220x220/003355/ffffff?text=Wobbles'; };
+
+                    item.appendChild(img);
+                    fragment.appendChild(item);
+                });
+                return fragment;
+            };
+
+            marqueeContent.appendChild(createMemeElements(memeUrls));
+            marqueeContent.appendChild(createMemeElements(memeUrls));
+        }
+
+        function createFlyingLogos() {
+            const body = document.body;
+            for (let i = 0; i < numLogos; i++) {
+                const logo = document.createElement('img');
+                logo.src = bgLogoUrl;
+                logo.className = 'flying-bg-logo';
+                logo.style.left = `${Math.random() * 100}vw`;
+                logo.style.top = `${Math.random() * 100}vh`;
+                
+                body.appendChild(logo);
+                animateLogo(logo);
             }
         }
 
-        function initChatHistory(currentUserId) {
-            userId = currentUserId;
-            isAuthReady = true;
+        function animateLogo(logo) {
+            const duration = Math.floor(Math.random() * 7) + 8;
             
-            chatCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/wobbles_chat`);
+            const moveLogo = () => {
+                const newX = Math.random() * 100;
+                const newY = Math.random() * 100;
+                const newScale = Math.random() * 1 + 0.5;
+                
+                logo.style.transitionDuration = `${duration}s`;
+                logo.style.transform = `translate(${newX}vw, ${newY}vh) scale(${newScale})`;
+                
+                setTimeout(moveLogo, (duration + Math.random() * 2) * 1000); 
+            };
             
-            setLoading(false);
+            setTimeout(moveLogo, Math.random() * 3000); 
+        }
 
-            const q = query(chatCollectionRef, orderBy('timestamp', 'asc'));
-
-            onSnapshot(q, (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    const data = change.doc.data();
-                    const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
-                    
-                    if (change.type === "added") {
-                        if (data.timestamp && (!lastTimestamp || timestamp > lastTimestamp)) {
-                            displayMessage(data.text, data.role, data.sources || [], timestamp);
-                            lastTimestamp = timestamp;
-                        } else if (!data.timestamp) {
-                            displayMessage(data.text, data.role, data.sources || [], timestamp);
-                        }
+        window.onload = () => {
+            // Fő oldali inicializálások
+            document.getElementById('ca-address-nav').textContent = CA_ADDRESS;
+            const mobileCaSpan = document.getElementById('ca-address-nav-mobile');
+            if (mobileCaSpan) mobileCaSpan.textContent = CA_ADDRESS;
+            
+            initMemeMarquee(); 
+            createFlyingLogos(); 
+            
+            // Hamburger menü eseménykezelője
+            const menuToggle = document.getElementById('menu-toggle');
+            
+            if (menuToggle) {
+                menuToggle.addEventListener('click', () => {
+                    navLinks.classList.toggle('hidden');
+                    navLinks.classList.toggle('open');
+                    // A mobil CA/X sávot elrejtjük/mutatjuk, hogy a menü ne legyen túl hosszú
+                    if (navLinks.classList.contains('open')) {
+                         mobileCaDisplay.classList.add('hidden'); 
+                    } else {
+                         mobileCaDisplay.classList.remove('hidden'); 
                     }
                 });
-
-                if (snapshot.size === 0) {
-                    sendIntroMessage();
-                }
-
-                scrollToBottom(); 
-            }, (error) => {
-                console.error("Firestore error:", error);
-                chatStatus.textContent = `Error loading chat: ${error.message}`;
-            });
-        }
-        
-        async function sendIntroMessage() {
-            const introText = `
-                Hey! I'm **Wobbles Agent**, the JellyJelly mascot! 🌊 I'm here to help you navigate the crypto ocean.
-
-                * **Live Data:** I use Google Search for current news and data on $WOBBLES and the JellyJelly project.
-                * **CA:** My CA is **${CA_ADDRESS}**.
-                
-                Ask me about token performance, news, or even a crypto joke! WOB!
-            `;
+            }
             
-            try {
-                const introMsg = {
-                    text: introText,
-                    role: 'model',
-                    sources: [],
-                    timestamp: serverTimestamp() 
-                };
-                await addDoc(chatCollectionRef, introMsg);
-            } catch (error) {
-                console.error("Error saving intro message:", error);
-                displayMessage("Hello! I couldn't load the chat history, but you can start asking me questions now!", "model");
-            }
-        }
-
-        // --- Inicializálás a modulban ---
-        
-        // Autentikáció állapotának figyelése (ez a Firebase blokk)
-        onAuthStateChanged(auth, (user) => {
-            if (user && !isAuthReady) {
-                initChatHistory(user.uid);
-            } else if (!user && initialAuthToken === null) {
-                // Csak akkor jelentkezzünk be anonim módon, ha nincs token és még nincs bejelentkezve.
-                signInAnonymously(auth);
-            }
-        });
-        
-        // Auth indítása, amikor a modul betöltődik.
-        authAndInit();
-        
+            // Chat bevezető üzenet indítása
+            // TÖRLÖM az előző chat előzményeit, ha a chat ablak nyitáskor töltjük be a bevezetőt
+            chatHistory = []; 
+            // displayMessage(INTRO_MESSAGE, 'model'); // A chat megnyitásakor töltjük be
+        };
     </script>
 </body>
 </html>
