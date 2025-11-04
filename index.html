@@ -451,7 +451,7 @@
                 <span id="ca-address-nav-mobile" class="text-xs font-mono text-white mr-3 whitespace-nowrap overflow-hidden text-ellipsis"></span> 
                 <button onclick="copyCA('ca-address-nav-mobile')" class="text-wobbles-blue hover:text-white transition duration-150">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-2m-3-13l3 3m0 0l-3 3m3-3H8"/></svg>
-                </button>
+                    </button>
             </div>
             <!-- X.com Ikon mobilhoz -->
             <a href="https://x.com/wobblebyjelly" target="_blank" class="text-white hover:text-wobbles-blue transition duration-150 ml-4" aria-label="X.com Link">
@@ -1024,6 +1024,7 @@
                 if (navLinks.classList.contains('open')) {
                     navLinks.classList.remove('open');
                     navLinks.classList.add('hidden');
+                    // Csak akkor állítsuk vissza a mobil CA/X sáv láthatóságát, ha a menü bezárult
                     mobileCaDisplay.classList.remove('hidden');
                 }
                 
@@ -1036,6 +1037,8 @@
         
         window.copyCA = function (elementId) {
             const caAddress = CA_ADDRESS;
+            // Ha a mobil gombot hívjuk, akkor az 'ca-address-nav-mobile' ID-t használjuk az elem azonosítására
+            const targetId = elementId === 'ca-address-nav' ? 'ca-address-nav' : 'ca-address-nav-mobile';
             const messageEl = document.getElementById('copy-message');
 
             try {
