@@ -680,7 +680,6 @@
         
         const menuToggle = document.getElementById('menu-toggle');
         const navLinks = document.getElementById('nav-links');
-        const desktopCaDisplay = document.querySelector('.md\\:flex.items-center.space-x-4.flex-shrink-0');
         const mobileCaDisplay = document.getElementById('mobile-ca-display');
 
 
@@ -1012,58 +1011,34 @@
         const numLogos = 20; 
         const bgLogoUrl = 'https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small';
         
-        window.scrollToSection = function (id) {
-            const section = document.getElementById(id);
-            const navBar = document.querySelector('nav');
-            
-            if (section && navBar) {
-                const navHeight = navBar.offsetHeight;
-                const offsetPosition = section.offsetTop - navHeight - 10;
-                
-                // Menü bezárása scroll után, ha nyitva van
-                if (navLinks.classList.contains('open')) {
-                    navLinks.classList.remove('open');
-                    navLinks.classList.add('hidden');
-                    // Csak akkor állítsuk vissza a mobil CA/X sáv láthatóságát, ha a menü bezárult
-                    mobileCaDisplay.classList.remove('hidden');
-                }
-                
-                window.scrollTo({
-                    top: offsetPosition,
-                    behavior: "smooth"
+        // Megjegyzés: Ezek a funkciók a window objektumra vannak felfedve a szkript modul végén.
+        // A jobb kompatibilitás érdekében ezeket kiemelem a modul elé.
+        
+        function initMemeMarquee() {
+            const marqueeContent = document.getElementById('marquee-content');
+            if (!marqueeContent) return;
+
+            const createMemeElements = (urls) => {
+                const fragment = document.createDocumentFragment();
+                urls.forEach((url, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'marquee-item'; 
+                    
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = `Wobbles Meme ${index + 1}`;
+                    img.onerror = function() { this.src = 'https://placehold.co/220x220/003355/ffffff?text=Wobbles'; };
+
+                    item.appendChild(img);
+                    fragment.appendChild(item);
                 });
-            }
+                return fragment;
+            };
+
+            marqueeContent.appendChild(createMemeElements(memeUrls));
+            marqueeContent.appendChild(createMemeElements(memeUrls));
         }
-        
-        window.copyCA = function (elementId) {
-            const caAddress = CA_ADDRESS;
-            // Ha a mobil gombot hívjuk, akkor az 'ca-address-nav-mobile' ID-t használjuk az elem azonosítására
-            const targetId = elementId === 'ca-address-nav' ? 'ca-address-nav' : 'ca-address-nav-mobile';
-            const messageEl = document.getElementById('copy-message');
 
-            try {
-                const textarea = document.createElement('textarea');
-                textarea.value = caAddress;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-
-                messageEl.textContent = "Contract Address copied to clipboard!";
-                messageEl.classList.remove('hidden', 'text-red-500');
-                messageEl.classList.add('text-wobbles-blue'); 
-
-            } catch (err) {
-                messageEl.textContent = "Copying failed. Please copy the address manually.";
-                messageEl.classList.remove('hidden', 'text-wobbles-blue');
-                messageEl.classList.add('text-red-500'); 
-            }
-
-            setTimeout(() => {
-                messageEl.classList.add('hidden');
-            }, 3000);
-        }
-        
         function createFlyingLogos() {
             const body = document.body;
             for (let i = 0; i < numLogos; i++) {
@@ -1095,6 +1070,75 @@
             setTimeout(moveLogo, Math.random() * 3000); 
         }
 
+        const memeUrls = [
+            "https://pbs.twimg.com/media/G43KrIGWoAApfY-?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G43G2y7WUAA26ss?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G43IL7IWIAEbRQN?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G424rgBWUAEH-X1?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42kJ1tXUAEr07F?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42cQYlXAAAI29h?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42JPG8WoAA4Myg?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G417EAJWsAELMAU?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G41lkMZXUAAy1Mw?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G41DW-oWwAEutY6?format=jpg&name=360x360",
+            "https://pbs.twimg.com/media/G40xS-lWcAAs-Vr?format=jpg&name=240x240"
+        ];
+        
+        // Ezt a függvényt kell globálissá tenni.
+        window.scrollToSection = function (id) {
+            const section = document.getElementById(id);
+            const navBar = document.querySelector('nav');
+            const navLinks = document.getElementById('nav-links'); // Vissza kell szerezni a navLinket
+            const mobileCaDisplay = document.getElementById('mobile-ca-display');
+
+            if (section && navBar) {
+                const navHeight = navBar.offsetHeight;
+                const offsetPosition = section.offsetTop - navHeight - 10;
+                
+                // Menü bezárása scroll után, ha nyitva van (mobil nézetben)
+                if (navLinks.classList.contains('open')) {
+                    navLinks.classList.remove('open');
+                    navLinks.classList.add('hidden');
+                    mobileCaDisplay.classList.remove('hidden');
+                }
+                
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: "smooth"
+                });
+            }
+        }
+
+        // Ezt a függvényt kell globálissá tenni.
+        window.copyCA = function (elementId) {
+            const caAddress = CA_ADDRESS;
+            const targetId = elementId === 'ca-address-nav' ? 'ca-address-nav' : 'ca-address-nav-mobile';
+            const messageEl = document.getElementById('copy-message');
+
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = caAddress;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                messageEl.textContent = "Contract Address copied to clipboard!";
+                messageEl.classList.remove('hidden', 'text-red-500');
+                messageEl.classList.add('text-wobbles-blue'); 
+
+            } catch (err) {
+                messageEl.textContent = "Copying failed. Please copy the address manually.";
+                messageEl.classList.remove('hidden', 'text-wobbles-blue');
+                messageEl.classList.add('text-red-500'); 
+            }
+
+            setTimeout(() => {
+                messageEl.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Ezt a függvényt kell globálissá tenni.
         window.showWobPopup = function (e) {
             const logoRect = e.currentTarget.getBoundingClientRect();
             
@@ -1122,76 +1166,394 @@
                 popup2.remove();
             }, 1000);
         }
-        
-        const memeUrls = [
-            "https://pbs.twimg.com/media/G43KrIGWoAApfY-?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G43G2y7WUAA26ss?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G43IL7IWIAEbRQN?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G424rgBWUAEH-X1?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G42kJ1tXUAEr07F?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G42cQYlXAAAI29h?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G42JPG8WoAA4Myg?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G417EAJWsAELMAU?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G41lkMZXUAAy1Mw?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G41DW-oWwAEutY6?format=jpg&name=360x360",
-            "https://pbs.twimg.com/media/G40xS-lWcAAs-Vr?format=jpg&name=240x240"
-        ];
-        
-        function initMemeMarquee() {
-            const marqueeContent = document.getElementById('marquee-content');
-            if (!marqueeContent) return;
 
-            const createMemeElements = (urls) => {
-                const fragment = document.createDocumentFragment();
-                urls.forEach((url, index) => {
-                    const item = document.createElement('div');
-                    item.className = 'marquee-item'; 
-                    
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.alt = `Wobbles Meme ${index + 1}`;
-                    img.onerror = function() { this.src = 'https://placehold.co/220x220/003355/ffffff?text=Wobbles'; };
+        // Chat nyitó/záró függvény globálissá tétele
+        window.toggleChat = function() {
+            const chatContainer = document.getElementById('chat-container');
+            const chatInput = document.getElementById('chat-input');
+            const navLinks = document.getElementById('nav-links'); // Megszerezzük
+            const mobileCaDisplay = document.getElementById('mobile-ca-display');
 
-                    item.appendChild(img);
-                    fragment.appendChild(item);
-                });
-                return fragment;
-            };
-
-            marqueeContent.appendChild(createMemeElements(memeUrls));
-            marqueeContent.appendChild(createMemeElements(memeUrls));
+            chatContainer.classList.toggle('hidden');
+            chatContainer.classList.toggle('open');
+            if (chatContainer.classList.contains('open')) {
+                scrollToBottom(); // A Firebase init blokkban van definiálva, de ott nem globális!
+                if (chatInput) chatInput.focus();
+                
+                // Menü bezárása, ha a chat megnyílik mobilnézetben
+                if (navLinks.classList.contains('open')) {
+                    navLinks.classList.remove('open');
+                    navLinks.classList.add('hidden');
+                    mobileCaDisplay.classList.remove('hidden');
+                }
+            }
         }
 
-        // --- Eseménykezelők és Inicializálás ---
+        // A `sendMessage` függvény nem tehető ide, mert a Firebase-től függ.
+        // A `sendMessage` függvény a `window.onload` után lesz felfedve a modulból.
 
         window.onload = () => {
             // Fő oldali inicializálások
             document.getElementById('ca-address-nav').textContent = CA_ADDRESS;
             // Mobil CA felületre is beállítjuk
-            document.getElementById('ca-address-nav-mobile').textContent = CA_ADDRESS;
+            const mobileCaSpan = document.getElementById('ca-address-nav-mobile');
+            if (mobileCaSpan) mobileCaSpan.textContent = CA_ADDRESS;
             
             initMemeMarquee(); 
             createFlyingLogos(); 
             
-            // Chat Inicializálás
-            authAndInit();
+            // Hamburger menü eseménykezelője itt marad
+            const menuToggle = document.getElementById('menu-toggle');
+            const navLinks = document.getElementById('nav-links');
+            const mobileCaDisplay = document.getElementById('mobile-ca-display');
+            
+            if (menuToggle) {
+                menuToggle.addEventListener('click', () => {
+                    navLinks.classList.toggle('hidden');
+                    navLinks.classList.toggle('open');
+                    // A mobil CA/X sávot elrejtjük/mutatjuk, hogy a menü ne legyen túl hosszú
+                    if (navLinks.classList.contains('open')) {
+                         mobileCaDisplay.classList.add('hidden'); 
+                    } else {
+                         mobileCaDisplay.classList.remove('hidden'); 
+                    }
+                });
+            }
+            
+            // Chat Inicializálás (a moduláris szkriptben marad)
+            // authAndInit(); // Ezt a moduláris szkript hívja
         };
         
-        // Autentikáció állapotának figyelése
+    </script>
+
+
+    <!-- FONTOS: Firebase/LLM API setup és új JS logika a chathez -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Globális állandók és inicializálás ---
+        
+        // Globális változók a Canvas környezetből
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const CA_ADDRESS = "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump"; // $WOBBLES CA
+
+        // Firebase Inicializálás
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // Firestore naplózás engedélyezése
+        setLogLevel('debug');
+
+        let userId = null;
+        let isAuthReady = false;
+        let chatCollectionRef = null;
+        let lastTimestamp = null;
+        
+        // --- HTML Elemek (Ismételt definiálás a modulon belül) ---
+        const chatContainer = document.getElementById('chat-container');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        const chatStatus = document.getElementById('chat-status');
+        
+        // --- Chat UI Függvények ---
+
+        function scrollToBottom() {
+            if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function setLoading(isLoading) {
+            if (!chatInput || !sendButton || !chatStatus) return; 
+
+            chatInput.disabled = isLoading || !isAuthReady;
+            sendButton.disabled = isLoading || !isAuthReady;
+            
+            chatStatus.textContent = isLoading ? "wob...wob...wob" : (isAuthReady ? "" : "Loading chat...");
+            chatStatus.classList.toggle('hidden', !isLoading && isAuthReady);
+            
+            chatStatus.classList.toggle('text-wobbles-blue', isLoading);
+            chatStatus.classList.toggle('text-red-400', !isLoading && !isAuthReady);
+
+
+            if (isLoading) {
+                const loadingBubble = document.createElement('div');
+                loadingBubble.className = 'message-bubble agent-message';
+                loadingBubble.id = 'loading-bubble';
+                loadingBubble.innerHTML = '<span class="loading-text">wob...wob...wob</span>';
+                chatMessages.appendChild(loadingBubble);
+                scrollToBottom();
+            } else {
+                const loadingBubble = document.getElementById('loading-bubble');
+                if (loadingBubble) {
+                    loadingBubble.remove();
+                }
+            }
+        }
+
+        function displayMessage(text, role, sources = [], timestamp = null) {
+            if (!chatMessages) return; 
+
+            if (timestamp) {
+                 const id = `msg-${timestamp.getTime()}-${role}`;
+                 if (document.getElementById(id)) return;
+            }
+
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${role === 'user' ? 'user-message' : 'agent-message'}`;
+            if (timestamp) {
+                bubble.id = `msg-${timestamp.getTime()}-${role}`;
+            }
+
+            let formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="underline hover:text-gray-100">$1</a>');
+
+            bubble.innerHTML = formattedText;
+
+            if (sources.length > 0) {
+                const sourcesHtml = sources.map(source => 
+                    `<a href="${source.uri}" target="_blank" class="underline hover:text-white" title="${source.title || 'Source'}">${source.title ? source.title.substring(0, 40) + '...' : 'Link'}</a>`
+                ).join(', ');
+                bubble.innerHTML += `<span class="citation-badge">Source: ${sourcesHtml}</span>`;
+            }
+
+            chatMessages.appendChild(bubble);
+            scrollToBottom();
+        }
+
+        // --- LLM API Hívás és Küldő logika (Firebase-függő) ---
+        
+        async function sendMessageToGemini(userQuery) {
+            const systemPrompt = `
+                Act as Wobbles Agent, the friendly and smart mascot of the JellyJelly ecosystem and the $WOBBLES memecoin. Your personality is cheerful, helpful, and sometimes makes good, gentle jokes.
+                Your primary focus is the JellyJelly startup, the $JellyJelly memecoin, and the $WOBBLES memecoin. You must use Google Search to ensure all information about JellyJelly, $JellyJelly, and $WOBBLES is current, real-time, and factually accurate (prices, news, Contract Addresses, and project developments).
+                
+                Important facts you must remember and use:
+                1. Your (Wobbles) token is: $WOBBLES (ticker).
+                2. Your (Wobbles) Contract Address (CA): ${CA_ADDRESS}.
+                3. You can provide analysis on the market performance and sentiment of both $WOBBLES and $JellyJelly.
+                4. **Crucially: Keep your responses concise and to the point.**
+                5. All your responses must be **English**.
+            `;
+            const apiKey = "AIzaSyAYAFjako0dI85jeDjUQBAoU4GSxREEob4"; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            // Utolsó 10 üzenet lekérése az előzményekből
+            const chatHistory = [];
+            const historyElements = Array.from(chatMessages.querySelectorAll('.message-bubble'));
+            
+            historyElements.forEach(el => {
+                const role = el.classList.contains('user-message') ? 'user' : 'model';
+                if (el.id !== 'loading-bubble' && el.dataset.role !== 'system-intro') {
+                    const text = el.textContent.split('Source:')[0].trim();
+                    chatHistory.push({ role: role, parts: [{ text: text }] });
+                }
+            });
+
+            chatHistory.push({ role: "user", parts: [{ text: userQuery }] });
+
+
+            const payload = {
+                contents: chatHistory,
+                tools: [{ "google_search": {} }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                config: {
+                    temperature: 0.7 
+                }
+            };
+            
+            let response;
+            try {
+                const maxRetries = 3;
+                let retryDelay = 1000;
+                
+                for (let i = 0; i < maxRetries; i++) {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        break; 
+                    }
+                    
+                    if (i < maxRetries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, retryDelay));
+                        retryDelay *= 2; 
+                    } else {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+                }
+
+                if (!response || !response.ok) {
+                    throw new Error("API call failed after maximum retries.");
+                }
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const text = candidate.content.parts[0].text;
+                    
+                    let sources = [];
+                    const groundingMetadata = candidate.groundingMetadata;
+                    if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                        sources = groundingMetadata.groundingAttributions
+                            .map(attribution => ({
+                                uri: attribution.web?.uri,
+                                title: attribution.web?.title,
+                            }))
+                            .filter(source => source.uri && source.title);
+                    }
+                    return { text, sources };
+
+                } else {
+                    return { text: "Sorry, I couldn't process the response. Please try again or ask something else!", sources: [] };
+                }
+
+            } catch (error) {
+                console.error("Error during LLM call:", error);
+                return { text: `A technical error occurred: ${error.message}`, sources: [] };
+            }
+        }
+
+        // Küldő funkció felfedése a window objektumra
+        window.sendMessage = async function () {
+            const userQuery = chatInput.value.trim();
+            if (!userQuery || !isAuthReady) return;
+
+            chatInput.value = '';
+            setLoading(true);
+
+            try {
+                const userMsg = {
+                    text: userQuery,
+                    role: 'user',
+                    timestamp: serverTimestamp() 
+                };
+                await addDoc(chatCollectionRef, userMsg);
+                
+                const geminiResponse = await sendMessageToGemini(userQuery);
+
+                const agentMsg = {
+                    text: geminiResponse.text,
+                    role: 'model',
+                    sources: geminiResponse.sources,
+                    timestamp: serverTimestamp()
+                };
+                await addDoc(chatCollectionRef, agentMsg);
+
+            } catch (error) {
+                console.error("Hiba az üzenetkezelés során:", error);
+                const errorBubble = document.createElement('div');
+                errorBubble.className = 'message-bubble agent-message bg-red-600';
+                errorBubble.textContent = "An error occurred. Please check the console for details. Try again!";
+                chatMessages.appendChild(errorBubble);
+                scrollToBottom();
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // --- Firebase/Auth/History Logic ---
+        
+        async function authAndInit() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase authentication error:", error);
+                chatStatus.textContent = `Authentication Error: ${error.message}`;
+                chatStatus.classList.remove('hidden');
+            }
+        }
+
+        function initChatHistory(currentUserId) {
+            userId = currentUserId;
+            isAuthReady = true;
+            
+            chatCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/wobbles_chat`);
+            
+            setLoading(false);
+
+            const q = query(chatCollectionRef, orderBy('timestamp', 'asc'));
+
+            onSnapshot(q, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
+                    
+                    if (change.type === "added") {
+                        if (data.timestamp && (!lastTimestamp || timestamp > lastTimestamp)) {
+                            displayMessage(data.text, data.role, data.sources || [], timestamp);
+                            lastTimestamp = timestamp;
+                        } else if (!data.timestamp) {
+                            displayMessage(data.text, data.role, data.sources || [], timestamp);
+                        }
+                    }
+                });
+
+                if (snapshot.size === 0) {
+                    sendIntroMessage();
+                }
+
+                scrollToBottom(); 
+            }, (error) => {
+                console.error("Firestore error:", error);
+                chatStatus.textContent = `Error loading chat: ${error.message}`;
+            });
+        }
+        
+        async function sendIntroMessage() {
+            const introText = `
+                Hey! I'm **Wobbles Agent**, the JellyJelly mascot! 🌊 I'm here to help you navigate the crypto ocean.
+
+                * **Live Data:** I use Google Search for current news and data on $WOBBLES and the JellyJelly project.
+                * **CA:** My CA is **${CA_ADDRESS}**.
+                
+                Ask me about token performance, news, or even a crypto joke! WOB!
+            `;
+            
+            try {
+                const introMsg = {
+                    text: introText,
+                    role: 'model',
+                    sources: [],
+                    timestamp: serverTimestamp() 
+                };
+                await addDoc(chatCollectionRef, introMsg);
+            } catch (error) {
+                console.error("Error saving intro message:", error);
+                displayMessage("Hello! I couldn't load the chat history, but you can start asking me questions now!", "model");
+            }
+        }
+
+        // --- Inicializálás a modulban ---
+        
+        // Autentikáció állapotának figyelése (ez a Firebase blokk)
         onAuthStateChanged(auth, (user) => {
             if (user && !isAuthReady) {
                 initChatHistory(user.uid);
-            } else if (!user) {
-                // Anonim bejelentkezés kezdeményezése, ha a felhasználó kijelentkezik (nem fordulhat elő a bejelentkezési logikánkban)
-                if (initialAuthToken === null) {
-                    signInAnonymously(auth);
-                }
+            } else if (!user && initialAuthToken === null) {
+                // Csak akkor jelentkezzünk be anonim módon, ha nincs token és még nincs bejelentkezve.
+                signInAnonymously(auth);
             }
         });
         
-        // Felfedjük a globális függvényeket a HTML onclick attribútumaihoz
-        window.toggleChat = toggleChat;
-        window.sendMessage = sendMessage;
+        // Auth indítása, amikor a modul betöltődik.
+        authAndInit();
+        
     </script>
 </body>
 </html>
