@@ -653,7 +653,9 @@
         const navLinks = document.getElementById('nav-links');
         const mobileCaDisplay = document.getElementById('mobile-ca-display');
         
-        let chatHistory = []; // Helyi chat előzmények tárolása (nincs perzisztencia)
+        // CSERE: chatHistory-t most csak a megjelenítéshez használjuk, az LLM-hez NEM
+        let displayHistory = []; 
+        
         const INTRO_MESSAGE = `
             Hey! I'm **Wobbles Agent**, the JellyJelly mascot! 🌊 I'm here to help you navigate the crypto ocean.
 
@@ -769,7 +771,7 @@
             
             if (chatContainer.classList.contains('open')) {
                 // Chat megnyitásakor (csak ha még nincs bevezető üzenet)
-                if (chatHistory.length === 0) {
+                if (displayHistory.length === 0) {
                      displayMessage(INTRO_MESSAGE, 'model');
                 }
                 scrollToBottom();
@@ -818,14 +820,14 @@
         function displayMessage(text, role, sources = []) {
             if (!chatMessages) return; 
 
-            // 1. Üzenet hozzáadása a helyi előzményekhez
-            chatHistory.push({ role, text });
-            // Megszabadulunk a régebbi üzenetektől
-            if (chatHistory.length > 20) chatHistory.shift(); 
+            // 1. Üzenet hozzáadása a helyi előzményekhez (csak a megjelenítéshez)
+            displayHistory.push({ role, text });
+            if (displayHistory.length > 20) displayHistory.shift(); 
             
             // 2. Üzenet megjelenítése a DOM-ban
             const bubble = document.createElement('div');
-            bubble.className = `message-bubble ${role === 'user' ? 'user-message' : 'agent-message'}`;
+            // ÚJ: Tiszta HTML elemeket használunk a biztonságért és a markdown támogatásért
+            bubble.className = `message-bubble ${role === 'user' ? 'user-message' : 'agent-message'} flex flex-col`;
 
             let formattedText = text
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -845,7 +847,7 @@
         }
 
 
-        // --- LLM Hívás (Közvetlen API hívás, nincs Firebase) ---
+        // --- LLM Hívás (Közvetlen API hívás, nincs Előzményküldés) ---
 
         async function sendMessageToGemini(userQuery) {
             const systemPrompt = `
@@ -862,36 +864,17 @@
             const apiKey = "AIzaSyAYAFjako0dI85jeDjUQBAoU4GSxREEob4"; // A megadott API kulcs beépítve.
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
-            // A chatHistory már tartalmazza az aktuális felhasználói üzenetet
-            
-            let contents = chatHistory.slice(-20).map(msg => ({ 
-                role: msg.role === 'model' ? 'model' : 'user', 
-                parts: [{ text: msg.text }] 
-            }));
+            // FONTOS: Csak a legutolsó lekérdezést küldjük el a 400-as hiba elkerülése érdekében.
+            const contents = [{ role: 'user', parts: [{ text: userQuery }] }];
 
-            // FONTOS JAVÍTÁS a 400-as hibára: Ha a legelső üzenet "model" szerepű, kihagyjuk, hogy a user/model váltakozás
-            // helyesen induljon a Gemini API felé (user-rel kell kezdődnie a kérésnek, ha nincs előzmény).
-            if (contents.length > 0 && contents[0].role === 'model') {
-                contents = contents.slice(1);
-            }
-            
-            // Ha a beszélgetés hossza páros (ami hibás lenne az API szemszögéből, ha user-rel kezdődött),
-            // és a legutolsó user, az azt jelenti, hogy minden rendben van. 
-            // Ha a contents páros, és az utolsó model, azt nem küldjük el, de ezt a slice már kezeli.
-
-            // Külön ellenőrzés az üres contents esetére (bár nem kéne előfordulnia, ha a user Query-t hozzáadtuk)
-            if (contents.length === 0) {
-                 throw new Error("API Error: Conversation history is empty after intro message removal. Check message flow.");
-            }
-
-            
             const payload = {
                 contents: contents,
                 tools: [{ "google_search": {} }],
                 systemInstruction: {
                     parts: [{ text: systemPrompt }]
                 },
-                config: {
+                // JAVÍTÁS: A 'config' helyett a szabványos 'generationConfig' nevet használjuk.
+                generationConfig: { 
                     temperature: 0.7 
                 }
             };
@@ -913,6 +896,7 @@
                     }
                     
                     if (i < maxRetries - 1) {
+                        // Nem naplózzuk a konzolra a backoff-ot
                         await new Promise(resolve => setTimeout(resolve, retryDelay));
                         retryDelay *= 2; 
                     } else {
@@ -948,7 +932,8 @@
 
             } catch (error) {
                 console.error("Error during LLM call:", error);
-                return { text: `A technical error occurred: ${error.message}`, sources: [] };
+                // JAVÍTÁS: Külső hiba esetén is a wobbles üzenet jelenjen meg
+                return { text: `My apologies! I encountered a deep-sea tangle (error: ${error.message}). Please try a different query!`, sources: [] };
             }
         }
 
@@ -971,8 +956,9 @@
                 displayMessage(geminiResponse.text, 'model', geminiResponse.sources);
 
             } catch (error) {
-                console.error("Hiba az üzenetkezelés során:", error);
-                displayMessage("An error occurred during the conversation. Try again!", "model");
+                // A hiba már a sendMessageToGemini-ben is kezelve van, de ez a fallback:
+                console.error("Hiba az üzenetkezelés során (fallback):", error);
+                displayMessage("An unexpected error occurred. Please try again!", "model");
             } finally {
                 setLoading(false);
             }
@@ -1064,10 +1050,8 @@
                 });
             }
             
-            // Chat bevezető üzenet indítása
-            // TÖRLÖM az előző chat előzményeit, ha a chat ablak nyitáskor töltjük be a bevezetőt
-            chatHistory = []; 
-            // displayMessage(INTRO_MESSAGE, 'model'); // A chat megnyitásakor töltjük be
+            // Töröljük a displayHistory-t a betöltéskor
+            displayHistory = []; 
         };
     </script>
 </body>
