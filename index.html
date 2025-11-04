@@ -353,6 +353,31 @@
             40% { transform: scale(1.0); }
         }
         /* --- CHAT CSS END --- */
+        
+        /* MOBIL MENÜ CSS */
+        #nav-links.open {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 100%; /* Navigációs sáv alatt */
+            left: 0;
+            width: 100%;
+            background-color: #000; /* Fekete háttér */
+            border-top: 2px solid var(--wobbles-blue);
+            padding: 1rem 0;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+        #nav-links.open > div {
+            flex-direction: column;
+            gap: 1rem;
+            padding: 0 1rem;
+        }
+        #nav-links.open button, #nav-links.open a {
+            width: 100%;
+            text-align: center;
+            padding: 0.75rem;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -363,21 +388,29 @@
 
     <!-- Fő Navigációs Sáv (Sticky) -->
     <nav class="bg-black shadow-2xl sticky top-0 z-20 border-b-4 border-wobbles-blue">
-        <div class="max-w-7xl mx-auto p-3 flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+        <div class="max-w-7xl mx-auto p-3 flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0 relative">
+            
+            <!-- Felső sor: Logo + Ticker + Menü gomb -->
+            <div class="flex items-center justify-between w-full md:w-auto">
+                <!-- 1. LEFT: Logo + Ticker -->
+                <div class="flex items-center flex-shrink-0">
+                    <img 
+                        src="https://pbs.twimg.com/profile_images/1984993605518233600/-T5Nq3EI_400x400.jpg" 
+                        alt="Wobbles Logo" 
+                        class="header-logo"
+                        onerror="this.onerror=null; this.src='https://placehold.co/36x36/007bff/ffffff?text=$';"
+                    >
+                    <span class="text-2xl font-extrabold text-white font-impact">$WOBBLES</span> 
+                </div>
 
-            <!-- 1. LEFT: Logo + Ticker -->
-            <div class="flex items-center flex-shrink-0">
-                <img 
-                    src="https://pbs.twimg.com/profile_images/1984993605518233600/-T5Nq3EI_400x400.jpg" 
-                    alt="Wobbles Logo" 
-                    class="header-logo"
-                    onerror="this.onerror=null; this.src='https://placehold.co/36x36/007bff/ffffff?text=$';"
-                >
-                <span class="text-2xl font-extrabold text-white font-impact">$WOBBLES</span> 
+                <!-- Hamburger Menü Gomb (Csak mobilon látható) -->
+                <button id="menu-toggle" class="md:hidden text-white hover:text-wobbles-blue transition duration-150 p-2 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
             </div>
 
-            <!-- 2. CENTER: Navigációs Linkek -->
-            <div class="w-full md:w-auto overflow-x-auto whitespace-nowrap header-nav">
+            <!-- 2. CENTER: Navigációs Linkek (Rejtett mobilon) -->
+            <div id="nav-links" class="hidden md:flex w-full md:w-auto overflow-x-auto whitespace-nowrap header-nav">
                 <div class="inline-flex space-x-4 mx-auto md:justify-center w-full">
                     <button onclick="scrollToSection('about')" class="nav-btn font-impact">About</button>
                     <button onclick="scrollToSection('tokens')" class="nav-btn font-impact">Tokenomics</button>
@@ -385,15 +418,15 @@
                     <button onclick="scrollToSection('chart')" class="nav-btn btn-solana !text-white !font-extrabold font-impact">Chart</button>
                     
                     <!-- JELLYJELLY GOMB (CHART UTÁN, KERET NÉLKÜL) -->
-                    <a href="https://dexscreener.com/solana/3bc2e2rxcfvf9op22lvbansvwos2t98q6ercroayqydq" target="_blank" class="btn-jellyjelly font-impact flex items-center">
+                    <a href="https://dexscreener.com/solana/3bc2e2rxcfvf9op22lvbansvwos2t98q6ercroayqydq" target="_blank" class="btn-jellyjelly font-impact flex items-center justify-center">
                         <img src="https://image.gatedataimg.com/big_data/1738253608c076fd3c98c6dcd7fa7d70a3fb507e5b.png" alt="JellyJelly Logo" class="jellyjelly-logo">
                         JellyJelly
                     </a>
                 </div>
             </div>
 
-            <!-- 3. RIGHT: CA + X.com Logo -->
-            <div class="flex items-center space-x-4 flex-shrink-0">
+            <!-- 3. RIGHT: CA + X.com Logo (mindig látható, MD-nél jobbra tolódik) -->
+            <div class="hidden md:flex items-center space-x-4 flex-shrink-0">
                 
                 <!-- CA Display + Copy (Teljes kiírás) -->
                 <div class="flex items-center bg-[#1c1c1c] rounded-full p-1 pl-3 border border-wobbles-blue shadow-inner max-w-xs overflow-hidden">
@@ -410,6 +443,20 @@
                 
             </div>
 
+        </div>
+        
+        <!-- Mobil CA Display (Hamburger menü alatt/felett, de mobilnézetben) -->
+        <div id="mobile-ca-display" class="md:hidden flex items-center justify-center p-2 bg-black border-t border-wobbles-blue w-full">
+            <div class="flex items-center bg-[#1c1c1c] rounded-full p-1 pl-3 border border-wobbles-blue shadow-inner max-w-full overflow-hidden">
+                <span id="ca-address-nav-mobile" class="text-xs font-mono text-white mr-3 whitespace-nowrap overflow-hidden text-ellipsis"></span> 
+                <button onclick="copyCA('ca-address-nav-mobile')" class="text-wobbles-blue hover:text-white transition duration-150">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-2m-3-13l3 3m0 0l-3 3m3-3H8"/></svg>
+                </button>
+            </div>
+            <!-- X.com Ikon mobilhoz -->
+            <a href="https://x.com/wobblebyjelly" target="_blank" class="text-white hover:text-wobbles-blue transition duration-150 ml-4" aria-label="X.com Link">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.901 1.144h3.298l-7.317 8.322 9.42 13.535h-3.267l-6.262-8.988-7.79 8.988h-3.32l8.038-9.845-8.4-11.752h3.355l5.594 7.828 6.45-8.322zm-2.094 18.667h1.577l-7.143-10.428h-1.637l7.203 10.428z"/></svg>
+            </a>
         </div>
     </nav>
     
@@ -631,6 +678,22 @@
         const sendButton = document.getElementById('send-button');
         const chatStatus = document.getElementById('chat-status');
         
+        const menuToggle = document.getElementById('menu-toggle');
+        const navLinks = document.getElementById('nav-links');
+        const desktopCaDisplay = document.querySelector('.md\\:flex.items-center.space-x-4.flex-shrink-0');
+        const mobileCaDisplay = document.getElementById('mobile-ca-display');
+
+
+        // --- Eseménykezelők hozzáadása ---
+        if (menuToggle) {
+            menuToggle.addEventListener('click', () => {
+                navLinks.classList.toggle('hidden');
+                navLinks.classList.toggle('open');
+                // A mobil CA/X sávot elrejtjük, ha a menü nyitva van, hogy a menü ne legyen túl hosszú
+                mobileCaDisplay.classList.toggle('hidden'); 
+            });
+        }
+        
         // --- Chat UI Függvények ---
         
         function toggleChat() {
@@ -720,7 +783,7 @@
                 4. **Crucially: Keep your responses concise and to the point.**
                 5. All your responses must be **English**.
             `;
-            // VÁLTOZTATÁS: API kulcs beillesztése a felhasználó kérése szerint
+            // API kulcs beillesztése a felhasználó kérése szerint
             const apiKey = "AIzaSyAYAFjako0dI85jeDjUQBAoU4GSxREEob4"; 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
@@ -957,6 +1020,13 @@
                 const navHeight = navBar.offsetHeight;
                 const offsetPosition = section.offsetTop - navHeight - 10;
                 
+                // Menü bezárása scroll után, ha nyitva van
+                if (navLinks.classList.contains('open')) {
+                    navLinks.classList.remove('open');
+                    navLinks.classList.add('hidden');
+                    mobileCaDisplay.classList.remove('hidden');
+                }
+                
                 window.scrollTo({
                     top: offsetPosition,
                     behavior: "smooth"
@@ -1094,6 +1164,9 @@
         window.onload = () => {
             // Fő oldali inicializálások
             document.getElementById('ca-address-nav').textContent = CA_ADDRESS;
+            // Mobil CA felületre is beállítjuk
+            document.getElementById('ca-address-nav-mobile').textContent = CA_ADDRESS;
+            
             initMemeMarquee(); 
             createFlyingLogos(); 
             
