@@ -202,11 +202,14 @@
             background: none; /* Háttér eltávolítása */
         }
         
-        /* FŐ LOGÓ KONTÉNER A RELATÍV POZÍCIONÁLÁSHOZ */
+        /* FŐ LOGÓ KONTÉNER A RELATÍV POZÍCIONÁLÁSHOZ (MÓDOSÍTVA) */
         .main-logo-container {
             position: relative;
             display: inline-block; /* Fontos, hogy a relative pozícionálás működjön */
             z-index: 10;
+            /* FONTOS VÁLTOZTATÁS: ELTÁVOLÍTVA A background-color: black; */
+            border-radius: 1.5rem; /* Kerekítés az illeszkedéshez */
+            overflow: hidden; /* A háttér illesztése a képhez, bár a kép is animált */
         }
 
         /* *WOB* FELIRAT ANIMÁCIÓ */
@@ -248,185 +251,114 @@
             left:0;
             border:0;
         }
+
+        /* --- CHAT CSS START --- */
+        #chat-head {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 50;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            /* ALAP ÁRNYÉK MEGTARTÁSA */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        #chat-head:hover {
+            transform: scale(1.05) translateY(-5px);
+        }
+
+        #chat-container {
+            position: fixed;
+            bottom: 6rem; /* A chat head felett jelenik meg */
+            right: 2rem;
+            z-index: 60;
+            width: min(90vw, 400px); /* Reszponzív méret */
+            height: min(70vh, 550px);
+            background-color: var(--card-bg);
+            border: 4px solid var(--wobbles-blue);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            transform: scale(0.8);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            transform-origin: bottom right;
+        }
+
+        #chat-container.open {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        #chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        .message-bubble {
+            max-width: 85%;
+            border-radius: 1rem;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+            word-wrap: break-word;
+        }
+        .agent-message {
+            background-color: var(--wobbles-blue);
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+        .user-message {
+            background-color: #3f3f46; /* Szürke (gray-700) */
+            align-self: flex-end;
+            margin-left: auto;
+            border-top-right-radius: 0;
+        }
+        .citation-badge {
+            font-size: 0.7rem;
+            display: block;
+            margin-top: 0.5rem;
+            color: #d1d5db; /* gray-300 */
+        }
+        .loading-dots {
+            font-size: 2rem;
+            line-height: 0;
+            height: 1.5rem;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+        /* MÓDOSÍTOTT CSS: Betöltésjelző stílusa */
+        .loading-text {
+            color: var(--wobbles-blue); /* Kék szín */
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+        .loading-dot {
+            animation: bounce 1.4s infinite ease-in-out both;
+            margin: 0 2px;
+            width: 8px;
+            height: 8px;
+            background-color: white;
+            border-radius: 50%;
+        }
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+        /* --- CHAT CSS END --- */
     </style>
 </head>
 <body class="min-h-screen">
     <div id="overlay"></div>
 
     <!-- HÁTTÉRBEN ÚSZÓ LOGÓK (20 db) -->
-    <script>
-        const CA_ADDRESS = "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump";
-        const bgLogoUrl = 'https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small';
-        const numLogos = 20; 
-        
-        // --- Core Functions ---
-        
-        // Függvény a navigációs gombokhoz (scrollToSection)
-        function scrollToSection(id) {
-            const section = document.getElementById(id);
-            const navBar = document.querySelector('nav');
-            
-            if (section && navBar) {
-                // Kiszámítja a nav bar magasságát a fix pozíció kompenzálásához
-                const navHeight = navBar.offsetHeight;
-                const offsetPosition = section.offsetTop - navHeight - 10; // -10 px a kis margóért
-                
-                window.scrollTo({
-                    top: offsetPosition,
-                    behavior: "smooth"
-                });
-            }
-        }
-        
-        // Függvény a CA másolásához
-        function copyCA(elementId) {
-            const caAddress = CA_ADDRESS;
-            const messageEl = document.getElementById('copy-message');
-
-            try {
-                const textarea = document.createElement('textarea');
-                textarea.value = caAddress;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-
-                messageEl.textContent = "Contract Address copied to clipboard!";
-                messageEl.classList.remove('hidden', 'text-red-500');
-                messageEl.classList.add('text-wobbles-blue'); 
-
-            } catch (err) {
-                messageEl.textContent = "Copying failed. Please copy the address manually.";
-                messageEl.classList.remove('hidden', 'text-wobbles-blue');
-                messageEl.classList.add('text-red-500'); 
-            }
-
-            setTimeout(() => {
-                messageEl.classList.add('hidden');
-            }, 3000);
-        }
-        
-        function createFlyingLogos() {
-            const body = document.body;
-            for (let i = 0; i < numLogos; i++) {
-                const logo = document.createElement('img');
-                logo.src = bgLogoUrl;
-                logo.className = 'flying-bg-logo';
-                logo.style.left = `${Math.random() * 100}vw`;
-                logo.style.top = `${Math.random() * 100}vh`;
-                
-                body.appendChild(logo);
-                animateLogo(logo);
-            }
-        }
-
-        function animateLogo(logo) {
-            const duration = Math.floor(Math.random() * 7) + 8; // 8-15 másodperc
-            
-            const moveLogo = () => {
-                const newX = Math.random() * 100;
-                const newY = Math.random() * 100;
-                const newScale = Math.random() * 1 + 0.5;
-                
-                logo.style.transitionDuration = `${duration}s`;
-                logo.style.transform = `translate(${newX}vw, ${newY}vh) scale(${newScale})`;
-                
-                setTimeout(moveLogo, (duration + Math.random() * 2) * 1000); 
-            };
-            
-            setTimeout(moveLogo, Math.random() * 3000); 
-        }
-
-        // *WOB* POPUP LOGIKA
-        function showWobPopup(e) {
-            // A popupot a FŐ LOGÓ FEJÉHEZ IGAZÍTJUK, ABSZOLÚT POZÍCIÓT HASZNÁLVA, MERT EZ GARANTÁLJA, HOGY NE A BANNEREN LEGYEN.
-            
-            // Ha a felhasználó a main-wobble-logo-ra kattintott, a popupot a *Logó koordinátáihoz* pozicionáljuk
-            const logoRect = e.currentTarget.getBoundingClientRect();
-            
-            // Abszolút pozíciók a dokumentumhoz képest
-            const baseTop = logoRect.top + window.scrollY;
-            const baseLeft = logoRect.left + window.scrollX;
-            const logoWidth = logoRect.width;
-
-            // Fő popup elem (Jobb oldali WOB)
-            const popup1 = document.createElement('div');
-            popup1.textContent = '*wob*';
-            popup1.className = 'wob-popup';
-            // Pozíció: A logó feje felett, jobbra
-            popup1.style.top = `${baseTop - 40}px`; 
-            popup1.style.left = `${baseLeft + logoWidth / 2 + 30}px`; 
-            
-            // Második popup elem (Bal oldali WOB)
-            const popup2 = document.createElement('div');
-            popup2.textContent = '*wob*';
-            popup2.className = 'wob-popup';
-            // Pozíció: A logó feje felett, balra
-            popup2.style.top = `${baseTop - 50}px`; 
-            popup2.style.left = `${baseLeft + logoWidth / 2 - 90}px`; 
-            
-            document.body.appendChild(popup1);
-            document.body.appendChild(popup2);
-
-            // Eltávolítás az animáció után
-            setTimeout(() => {
-                popup1.remove();
-                popup2.remove();
-            }, 1000);
-        }
-        
-        // --- MEME MARQUEE LOGIC ---
-        const memeUrls = [
-            "https://pbs.twimg.com/media/G43KrIGWoAApfY-?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G43G2y7WUAA26ss?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G43IL7IWIAEbRQN?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G424rgBWUAEH-X1?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G42kJ1tXUAEr07F?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G42cQYlXAAAI29h?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G42JPG8WoAA4Myg?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G417EAJWsAELMAU?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G41lkMZXUAAy1Mw?format=jpg&name=240x240",
-            "https://pbs.twimg.com/media/G41DW-oWwAEutY6?format=jpg&name=360x360",
-            "https://pbs.twimg.com/media/G40xS-lWcAAs-Vr?format=jpg&name=240x240"
-        ];
-        
-        function initMemeMarquee() {
-            const marqueeContent = document.getElementById('marquee-content');
-            if (!marqueeContent) return;
-
-            const createMemeElements = (urls) => {
-                const fragment = document.createDocumentFragment();
-                urls.forEach((url, index) => {
-                    const item = document.createElement('div');
-                    item.className = 'marquee-item'; 
-                    
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.alt = `Wobbles Meme ${index + 1}`;
-                    img.onerror = function() { this.src = 'https://placehold.co/220x220/003355/ffffff?text=Wobbles'; };
-
-                    item.appendChild(img);
-                    fragment.appendChild(item);
-                });
-                return fragment;
-            };
-
-            marqueeContent.appendChild(createMemeElements(memeUrls));
-            marqueeContent.appendChild(createMemeElements(memeUrls));
-        }
-
-        // --- Event Listeners and Init ---
-
-        window.onload = () => {
-            const caFull = "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump";
-            // CA teljes kiírása a fejlécben
-            document.getElementById('ca-address-nav').textContent = caFull;
-            
-            initMemeMarquee(); 
-            createFlyingLogos(); 
-        };
-    </script>
-
+    <!-- Meglévő JS logika a <script type="module"> blokkba kerül át -->
 
     <!-- Fő Navigációs Sáv (Sticky) -->
     <nav class="bg-black shadow-2xl sticky top-0 z-20 border-b-4 border-wobbles-blue">
@@ -499,8 +431,8 @@
                 <div class="main-logo-container mx-auto">
                     <img 
                         id="main-wobble-logo"
-                        src="https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small" 
-                        alt="Main Animated Wobbles Logo" 
+                        src="https://pbs.twimg.com/media/G463ofEW0AACfj1?format=png&name=small" 
+                        alt="Main Animated JellyJelly Logo" 
                         class="w-80 h-80 mb-4" 
                         onclick="showWobPopup(event)"
                     >
@@ -577,7 +509,7 @@
             
             <!-- DEXSCREENER CHART SZEKCIÓ -->
             <section id="chart" class="mb-12">
-                <h2 class="text-3xl md:text-4xl font-extrabold text-white text-center mb-8 bg-card p-4 rounded-3xl shadow-xl border-b-4 border-wobbles-blue font-impact">
+                <h2 class="text-3xl md::text-4xl font-extrabold text-white text-center mb-8 bg-card p-4 rounded-3xl shadow-xl border-b-4 border-wobbles-blue font-impact">
                     Live Price Chart (<span class="text-wobbles-blue">Solana</span>)
                 </h2>
                 <div class="chart-container mx-auto">
@@ -599,5 +531,590 @@
             <p>&copy; 2025 All Rights Reserved.</p>
         </div>
     </footer>
+    
+    <!-- WOBBLES CHAT HEAD ÉS ABLAK START -->
+    
+    <!-- Lebegő Chat Fej -->
+    <div id="chat-head" onclick="toggleChat()" class="flex items-center bg-transparent rounded-full p-2 pr-4 shadow-xl">
+        <img 
+            src="https://pbs.twimg.com/profile_images/1984993605518233600/-T5Nq3EI_400x400.jpg" 
+            alt="Wobbles Agent Logo" 
+            class="header-logo !w-12 !h-12 !border-2"
+            onerror="this.src='https://placehold.co/48x48/007bff/ffffff?text=$';"
+        >
+        <span class="text-white font-extrabold text-lg ml-2 font-impact">Wobbles Agent</span>
+    </div>
+
+    <!-- Chat Ablak -->
+    <div id="chat-container" class="hidden">
+        
+        <!-- Chat Fejléc -->
+        <div class="flex items-center justify-between p-4 bg-black border-b border-wobbles-blue">
+            <div class="flex items-center">
+                <img 
+                    src="https://pbs.twimg.com/profile_images/1984993605518233600/-T5Nq3EI_400x400.jpg" 
+                    alt="Wobbles Agent Logo" 
+                    class="header-logo !w-8 !h-8 !border-2"
+                    onerror="this.src='https://placehold.co/32x32/007bff/ffffff?text=$';"
+                >
+                <span class="text-xl font-extrabold text-white font-impact ml-2">Wobbles Agent</span>
+            </div>
+            <button onclick="toggleChat()" class="text-white hover:text-red-500 transition duration-150">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- Üzenetek Konténer -->
+        <div id="chat-messages" class="flex flex-col space-y-2">
+            <!-- Az üzenetek ide kerülnek a JS által -->
+        </div>
+
+        <!-- Bemeneti Mező -->
+        <div class="p-4 bg-black border-t border-wobbles-blue">
+            <div class="flex space-x-2">
+                <input 
+                    type="text" 
+                    id="chat-input" 
+                    placeholder="Ask about JellyJelly or $WOBBLES..." 
+                    class="w-full p-3 rounded-full bg-[#1c1c1c] text-white focus:ring-2 focus:ring-wobbles-blue focus:outline-none"
+                    onkeypress="if(event.key === 'Enter') sendMessage()"
+                    autocomplete="off"
+                    disabled
+                >
+                <button 
+                    id="send-button"
+                    onclick="sendMessage()" 
+                    class="bg-wobbles-blue text-white rounded-full p-3 hover:bg-white hover:text-wobbles-blue transition duration-200 disabled:opacity-50"
+                    disabled
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
+            </div>
+            <p id="chat-status" class="text-xs text-center mt-2 text-red-400 hidden">Chat is loading...</p>
+        </div>
+    </div>
+
+    <!-- WOBBLES CHAT HEAD ÉS ABLAK END -->
+    
+    <!-- FONTOS: Firebase/LLM API setup és új JS logika a chathez -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Globális állandók és inicializálás ---
+        
+        // Globális változók a Canvas környezetből
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const CA_ADDRESS = "9yZ5Ru8pbmJZ6Q2DKLCGXkaLNwkm83cnJ4QCw4PFpump"; // $WOBBLES CA
+
+        // Firebase Inicializálás
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // Firestore naplózás engedélyezése
+        setLogLevel('debug');
+
+        let userId = null;
+        let isAuthReady = false;
+        let chatCollectionRef = null;
+        let lastTimestamp = null; // A bevezető üzenet az első üzenet, de ha van már előzmény, akkor nem kell.
+        
+        // --- HTML Elemek ---
+        const chatContainer = document.getElementById('chat-container');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        const chatStatus = document.getElementById('chat-status');
+        
+        // --- Chat UI Függvények ---
+        
+        function toggleChat() {
+            chatContainer.classList.toggle('hidden');
+            chatContainer.classList.toggle('open');
+            if (chatContainer.classList.contains('open')) {
+                scrollToBottom();
+                chatInput.focus();
+            }
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // MÓDOSÍTOTT: Loading üzenet és stílus
+        function setLoading(isLoading) {
+            chatInput.disabled = isLoading || !isAuthReady;
+            sendButton.disabled = isLoading || !isAuthReady;
+            
+            chatStatus.textContent = isLoading ? "wob...wob...wob" : (isAuthReady ? "" : "Loading chat...");
+            chatStatus.classList.toggle('hidden', !isLoading && isAuthReady);
+            
+            // Kék szín hozzáadása a betöltéshez
+            chatStatus.classList.toggle('text-wobbles-blue', isLoading);
+            chatStatus.classList.toggle('text-red-400', !isLoading && !isAuthReady);
+
+
+            if (isLoading) {
+                // Betöltési buborék hozzáadása (a szöveget használjuk, nem a pontokat)
+                const loadingBubble = document.createElement('div');
+                loadingBubble.className = 'message-bubble agent-message';
+                loadingBubble.id = 'loading-bubble';
+                loadingBubble.innerHTML = '<span class="loading-text">wob...wob...wob</span>';
+                chatMessages.appendChild(loadingBubble);
+                scrollToBottom();
+            } else {
+                const loadingBubble = document.getElementById('loading-bubble');
+                if (loadingBubble) {
+                    loadingBubble.remove();
+                }
+            }
+        }
+
+        function displayMessage(text, role, sources = [], timestamp = null) {
+            // Ellenőrzés, hogy az üzenet már létezik-e (duplikáció elkerülése onSnapshot miatt)
+            if (timestamp) {
+                 const id = `msg-${timestamp.getTime()}-${role}`;
+                 if (document.getElementById(id)) return;
+            }
+
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${role === 'user' ? 'user-message' : 'agent-message'}`;
+            if (timestamp) {
+                bubble.id = `msg-${timestamp.getTime()}-${role}`;
+            }
+
+            // A Markdown jelöléseket egyszerű HTML-re cseréljük (pl. félkövér, linkek)
+            let formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **félkövér**
+                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="underline hover:text-gray-100">$1</a>'); // [link]
+
+            bubble.innerHTML = formattedText;
+
+            if (sources.length > 0) {
+                const sourcesHtml = sources.map(source => 
+                    `<a href="${source.uri}" target="_blank" class="underline hover:text-white" title="${source.title || 'Source'}">${source.title ? source.title.substring(0, 40) + '...' : 'Link'}</a>`
+                ).join(', ');
+                bubble.innerHTML += `<span class="citation-badge">Source: ${sourcesHtml}</span>`;
+            }
+
+            chatMessages.appendChild(bubble);
+            scrollToBottom();
+        }
+
+        // --- LLM API Hívás ---
+
+        async function sendMessageToGemini(userQuery) {
+            const systemPrompt = `
+                Act as Wobbles Agent, the friendly and smart mascot of the JellyJelly ecosystem and the $WOBBLES memecoin. Your personality is cheerful, helpful, and sometimes makes good, gentle jokes.
+                Your primary focus is the JellyJelly startup, the $JellyJelly memecoin, and the $WOBBLES memecoin. You must use Google Search to ensure all information about JellyJelly, $JellyJelly, and $WOBBLES is current, real-time, and factually accurate (prices, news, Contract Addresses, and project developments).
+                
+                Important facts you must remember and use:
+                1. Your (Wobbles) token is: $WOBBLES (ticker).
+                2. Your (Wobbles) Contract Address (CA): ${CA_ADDRESS}.
+                3. You can provide analysis on the market performance and sentiment of both $WOBBLES and $JellyJelly.
+                4. **Crucially: Keep your responses concise and to the point.**
+                5. All your responses must be **English**.
+            `;
+            // VÁLTOZTATÁS: API kulcs beillesztése a felhasználó kérése szerint
+            const apiKey = "AIzaSyAYAFjako0dI85jeDjUQBAoU4GSxREEob4"; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            // Utolsó 10 üzenet lekérése az előzményekből
+            const chatHistory = [];
+            const historyElements = Array.from(chatMessages.querySelectorAll('.message-bubble'));
+            
+            // Csak a tényleges, befejezett üzeneteket használjuk fel
+            historyElements.forEach(el => {
+                const role = el.classList.contains('user-message') ? 'user' : 'model';
+                // Ne használjuk a bevezető üzenetet vagy a betöltő buborékot az előzményekben
+                if (el.id !== 'loading-bubble' && el.dataset.role !== 'system-intro') {
+                    // A visszaalakítás nem tökéletes, de a lényeget átadja
+                    const text = el.textContent.split('Source:')[0].trim();
+                    chatHistory.push({ role: role, parts: [{ text: text }] });
+                }
+            });
+
+            // Adjuk hozzá a felhasználó aktuális üzenetét is a tartalomhoz
+            chatHistory.push({ role: "user", parts: [{ text: userQuery }] });
+
+
+            const payload = {
+                contents: chatHistory,
+                tools: [{ "google_search": {} }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                config: {
+                    // Magasabb hőmérséklet a viccekhez és a személyiséghez
+                    temperature: 0.7 
+                }
+            };
+            
+            let response;
+            try {
+                // Exponential Backoff implementálása
+                const maxRetries = 3;
+                let retryDelay = 1000;
+                
+                for (let i = 0; i < maxRetries; i++) {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        break; // Siker
+                    }
+                    
+                    if (i < maxRetries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, retryDelay));
+                        retryDelay *= 2; // Exponenciális növekedés
+                    } else {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+                }
+
+                if (!response || !response.ok) {
+                    throw new Error("API call failed after maximum retries.");
+                }
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const text = candidate.content.parts[0].text;
+                    
+                    let sources = [];
+                    const groundingMetadata = candidate.groundingMetadata;
+                    if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                        sources = groundingMetadata.groundingAttributions
+                            .map(attribution => ({
+                                uri: attribution.web?.uri,
+                                title: attribution.web?.title,
+                            }))
+                            .filter(source => source.uri && source.title);
+                    }
+                    return { text, sources };
+
+                } else {
+                    return { text: "Sorry, I couldn't process the response. Please try again or ask something else!", sources: [] };
+                }
+
+            } catch (error) {
+                console.error("Error during LLM call:", error);
+                return { text: `A technical error occurred: ${error.message}`, sources: [] };
+            }
+        }
+
+        async function sendMessage() {
+            const userQuery = chatInput.value.trim();
+            if (!userQuery || !isAuthReady) return;
+
+            // 1. Üzenet elküldése
+            chatInput.value = '';
+            setLoading(true);
+
+            try {
+                // 2. Üzenet mentése Firestore-ba (user)
+                const userMsg = {
+                    text: userQuery,
+                    role: 'user',
+                    timestamp: serverTimestamp() 
+                };
+                await addDoc(chatCollectionRef, userMsg);
+                
+                // 3. Gemini hívása
+                const geminiResponse = await sendMessageToGemini(userQuery);
+
+                // 4. Üzenet mentése Firestore-ba (agent)
+                const agentMsg = {
+                    text: geminiResponse.text,
+                    role: 'model',
+                    sources: geminiResponse.sources,
+                    timestamp: serverTimestamp()
+                };
+                await addDoc(chatCollectionRef, agentMsg);
+
+            } catch (error) {
+                console.error("Hiba az üzenetkezelés során:", error);
+                const errorBubble = document.createElement('div');
+                errorBubble.className = 'message-bubble agent-message bg-red-600';
+                errorBubble.textContent = "An error occurred. Please check the console for details. Try again!";
+                chatMessages.appendChild(errorBubble);
+                scrollToBottom();
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // --- Firebase/Auth/History Logic ---
+        
+        async function authAndInit() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                // onAuthStateChanged kezeli a userId beállítást és a chat indítását
+            } catch (error) {
+                console.error("Firebase authentication error:", error);
+                chatStatus.textContent = `Authentication Error: ${error.message}`;
+                chatStatus.classList.remove('hidden');
+            }
+        }
+
+        function initChatHistory(currentUserId) {
+            userId = currentUserId;
+            isAuthReady = true;
+            
+            // Privát adatok útvonala: /artifacts/{appId}/users/{userId}/wobbles_chat
+            chatCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/wobbles_chat`);
+            
+            // Engedélyezzük a beviteli mezőt
+            setLoading(false);
+
+            const q = query(chatCollectionRef, orderBy('timestamp', 'asc'));
+
+            // onSnapshot a valós idejű frissítésekhez
+            onSnapshot(q, (snapshot) => {
+                let hasInitialMessage = false;
+                
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
+                    
+                    if (change.type === "added") {
+                        if (data.role === 'model') hasInitialMessage = true;
+                        
+                        // Csak a legújabb üzenetek hozzáadása (a teljes lista nem duplikálódik)
+                        if (data.timestamp && (!lastTimestamp || timestamp > lastTimestamp)) {
+                            displayMessage(data.text, data.role, data.sources || [], timestamp);
+                            lastTimestamp = timestamp;
+                        } else if (!data.timestamp) {
+                            // Időbélyeg nélküli üzenetek hozzáadása (ez elméletileg nem fordul elő a serverTimestamp miatt)
+                            displayMessage(data.text, data.role, data.sources || [], timestamp);
+                        }
+                    }
+                });
+
+                // Ha nincs még üzenet, elküldjük a bevezetőt
+                if (snapshot.size === 0) {
+                    sendIntroMessage();
+                }
+
+                // Görgessünk a legutolsó üzenethez a kezdeti betöltés után
+                scrollToBottom(); 
+            }, (error) => {
+                console.error("Firestore error:", error);
+                chatStatus.textContent = `Error loading chat: ${error.message}`;
+            });
+        }
+        
+        // MÓDOSÍTOTT: Bevezető üzenet (rövid, angol)
+        async function sendIntroMessage() {
+            const introText = `
+                Hey! I'm **Wobbles Agent**, the JellyJelly mascot! 🌊 I'm here to help you navigate the crypto ocean.
+
+                * **Live Data:** I use Google Search for current news and data on $WOBBLES and the JellyJelly project.
+                * **CA:** My CA is **${CA_ADDRESS}**.
+                
+                Ask me about token performance, news, or even a crypto joke! WOB!
+            `;
+            
+            try {
+                const introMsg = {
+                    text: introText,
+                    role: 'model',
+                    sources: [],
+                    timestamp: serverTimestamp() 
+                };
+                await addDoc(chatCollectionRef, introMsg);
+            } catch (error) {
+                console.error("Error saving intro message:", error);
+                displayMessage("Hello! I couldn't load the chat history, but you can start asking me questions now!", "model");
+            }
+        }
+
+
+        // --- Eredeti JS Funkciók áthelyezése és módosítása ---
+        
+        const numLogos = 20; 
+        const bgLogoUrl = 'https://pbs.twimg.com/media/G4x4K1HXAAAPy5X?format=png&name=small';
+        
+        window.scrollToSection = function (id) {
+            const section = document.getElementById(id);
+            const navBar = document.querySelector('nav');
+            
+            if (section && navBar) {
+                const navHeight = navBar.offsetHeight;
+                const offsetPosition = section.offsetTop - navHeight - 10;
+                
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: "smooth"
+                });
+            }
+        }
+        
+        window.copyCA = function (elementId) {
+            const caAddress = CA_ADDRESS;
+            const messageEl = document.getElementById('copy-message');
+
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = caAddress;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                messageEl.textContent = "Contract Address copied to clipboard!";
+                messageEl.classList.remove('hidden', 'text-red-500');
+                messageEl.classList.add('text-wobbles-blue'); 
+
+            } catch (err) {
+                messageEl.textContent = "Copying failed. Please copy the address manually.";
+                messageEl.classList.remove('hidden', 'text-wobbles-blue');
+                messageEl.classList.add('text-red-500'); 
+            }
+
+            setTimeout(() => {
+                messageEl.classList.add('hidden');
+            }, 3000);
+        }
+        
+        function createFlyingLogos() {
+            const body = document.body;
+            for (let i = 0; i < numLogos; i++) {
+                const logo = document.createElement('img');
+                logo.src = bgLogoUrl;
+                logo.className = 'flying-bg-logo';
+                logo.style.left = `${Math.random() * 100}vw`;
+                logo.style.top = `${Math.random() * 100}vh`;
+                
+                body.appendChild(logo);
+                animateLogo(logo);
+            }
+        }
+
+        function animateLogo(logo) {
+            const duration = Math.floor(Math.random() * 7) + 8; // 8-15 másodperc
+            
+            const moveLogo = () => {
+                const newX = Math.random() * 100;
+                const newY = Math.random() * 100;
+                const newScale = Math.random() * 1 + 0.5;
+                
+                logo.style.transitionDuration = `${duration}s`;
+                logo.style.transform = `translate(${newX}vw, ${newY}vh) scale(${newScale})`;
+                
+                setTimeout(moveLogo, (duration + Math.random() * 2) * 1000); 
+            };
+            
+            setTimeout(moveLogo, Math.random() * 3000); 
+        }
+
+        window.showWobPopup = function (e) {
+            const logoRect = e.currentTarget.getBoundingClientRect();
+            
+            const baseTop = logoRect.top + window.scrollY;
+            const baseLeft = logoRect.left + window.scrollX;
+            const logoWidth = logoRect.width;
+
+            const popup1 = document.createElement('div');
+            popup1.textContent = '*wob*';
+            popup1.className = 'wob-popup';
+            popup1.style.top = `${baseTop - 40}px`; 
+            popup1.style.left = `${baseLeft + logoWidth / 2 + 30}px`; 
+            
+            const popup2 = document.createElement('div');
+            popup2.textContent = '*wob*';
+            popup2.className = 'wob-popup';
+            popup2.style.top = `${baseTop - 50}px`; 
+            popup2.style.left = `${baseLeft + logoWidth / 2 - 90}px`; 
+            
+            document.body.appendChild(popup1);
+            document.body.appendChild(popup2);
+
+            setTimeout(() => {
+                popup1.remove();
+                popup2.remove();
+            }, 1000);
+        }
+        
+        const memeUrls = [
+            "https://pbs.twimg.com/media/G43KrIGWoAApfY-?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G43G2y7WUAA26ss?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G43IL7IWIAEbRQN?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G424rgBWUAEH-X1?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42kJ1tXUAEr07F?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42cQYlXAAAI29h?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G42JPG8WoAA4Myg?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G417EAJWsAELMAU?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G41lkMZXUAAy1Mw?format=jpg&name=240x240",
+            "https://pbs.twimg.com/media/G41DW-oWwAEutY6?format=jpg&name=360x360",
+            "https://pbs.twimg.com/media/G40xS-lWcAAs-Vr?format=jpg&name=240x240"
+        ];
+        
+        function initMemeMarquee() {
+            const marqueeContent = document.getElementById('marquee-content');
+            if (!marqueeContent) return;
+
+            const createMemeElements = (urls) => {
+                const fragment = document.createDocumentFragment();
+                urls.forEach((url, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'marquee-item'; 
+                    
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = `Wobbles Meme ${index + 1}`;
+                    img.onerror = function() { this.src = 'https://placehold.co/220x220/003355/ffffff?text=Wobbles'; };
+
+                    item.appendChild(img);
+                    fragment.appendChild(item);
+                });
+                return fragment;
+            };
+
+            marqueeContent.appendChild(createMemeElements(memeUrls));
+            marqueeContent.appendChild(createMemeElements(memeUrls));
+        }
+
+        // --- Eseménykezelők és Inicializálás ---
+
+        window.onload = () => {
+            // Fő oldali inicializálások
+            document.getElementById('ca-address-nav').textContent = CA_ADDRESS;
+            initMemeMarquee(); 
+            createFlyingLogos(); 
+            
+            // Chat Inicializálás
+            authAndInit();
+        };
+        
+        // Autentikáció állapotának figyelése
+        onAuthStateChanged(auth, (user) => {
+            if (user && !isAuthReady) {
+                initChatHistory(user.uid);
+            } else if (!user) {
+                // Anonim bejelentkezés kezdeményezése, ha a felhasználó kijelentkezik (nem fordulhat elő a bejelentkezési logikánkban)
+                if (initialAuthToken === null) {
+                    signInAnonymously(auth);
+                }
+            }
+        });
+        
+        // Felfedjük a globális függvényeket a HTML onclick attribútumaihoz
+        window.toggleChat = toggleChat;
+        window.sendMessage = sendMessage;
+    </script>
 </body>
 </html>
